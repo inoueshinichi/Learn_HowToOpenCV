@@ -139,7 +139,7 @@ int main(int argc, char** argv)
 
                     // 値のクリア＆メモリ解放
                     list.clear();
-                    vector<int>.swap(list);
+                    vector<int>().swap(list);
                 }
             }   
         }
@@ -178,13 +178,169 @@ int main(int argc, char** argv)
         imshow("img_dst", img_dst);
 
 
-        /*OpenCVによるラベリング(かなり高性能)*/
-        Mat img_dst2, img_lbl;
-        int nlabel_ = connectedComponents(img_binary, img_lbl);
-        compare(img_lbl, 7, img_dst2, CMP_EQ); // ラベル7を抜き出す
-        std::cout << "nlabel:" << nlabel_ << std::endl;
-        imshow("img_dst2", img_dst2);
-        imshow("img_lbl", img_lbl);
+        // /*OpenCVによるラベリング(かなり高性能)*/
+        // Mat img_dst2, img_lbl;
+        // int nlabel_ = connectedComponents(img_binary, img_lbl);
+        // compare(img_lbl, 7, img_dst2, CMP_EQ); // ラベル7を抜き出す
+        // std::cout << "nlabel:" << nlabel_ << std::endl;
+        // imshow("img_dst2", img_dst2);
+        // imshow("img_lbl", img_lbl);
+
+
+        /*ラベルブロブの形状特徴*/
+        // 本来はラベル毎に抽出して行うが、ここでは、img_binaryに簡易的に1つのブロブが存在することを想定
+
+        // ブロブ、アスペクト比(縦/横)
+        Rect rect = boundingRect(img_binary);
+        double aspect_ratio = (double)(rect.height / rect.width);
+        std::cout << "aspect_ratio: " << aspect_ratio << std::endl;
+        Mat img_bounding_rect;
+        img_binary.copyTo(img_bounding_rect);
+        Point tl = rect.tl();
+        Point br = rect.br();
+        rectangle(img_bounding_rect, tl, br, Scalar(255,0,0), 1, LINE_8);
+        imshow("img_bounding_rect", img_bounding_rect);
+
+        // ブロブの面積
+        int area = 0;
+        for (int y=0; y<img_binary.rows; ++y) {
+            for (int x=0; x<img_binary.cols; ++x) {
+                if (img_binary.data[y*img_binary.step + x] == 255) {
+                    area++;
+                }
+            }
+        }
+        std::cout << "area: " << area << std::endl;
+
+        // ブロブの周囲長(Perimeter)
+        // 始点の探索
+        int init_x = 0;
+        int init_y = 0;
+        bool escape_flag = false;
+        for (int y=0; y<img_binary.rows; ++y) {
+            for (int x=0; x<img_binary.cols; ++x) {
+                if (img_binary.data[y*img_binary.step+x] == 255) {
+                    init_x = x;
+                    init_y = y;
+                    escape_flag = true;
+                    break;
+                }
+            }
+            if (escape_flag) {
+                std::cout << "first point got " << std::endl;
+                break;
+            }
+        }
+        // ４近傍　上下左右
+        const int N = 4;
+        int rot_x[N] = {0, 1, 0, -1};
+        int rot_y[N] = {1, 0, -1, 0};
+        //const int N = 8;
+        //int rot_x[N] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+        //int rot_y[N] = { 1, 1, 0, -1, -1, -1, 0, 1 };
+        int rot = 0;          // 探索方向
+        double perimeter = 0; // 周囲長
+        int now_x, now_y;
+        int pre_x = init_x;
+        int pre_y = init_y;
+        while (true) {
+            for (int index = 0; index < N; ++index) { // 4近傍
+                now_x = pre_x + rot_x[(rot + index) % N];
+                now_y = pre_y + rot_y[(rot + index) % N];
+
+                if (now_x < 0 ||
+                    now_x >= img_binary.cols ||
+                    now_y < 0 ||
+                    now_y >= img_binary.rows) {
+                    continue;
+                }
+
+                int lum = img_binary.data[now_y*img_binary.step + now_x];
+                if (lum == 255) 
+                {
+                    perimeter++;
+
+                    /* 8近傍ver
+                    if (index == 1 ||
+                        index == 3 || 
+                        index == 5 || 
+                        index == 7) {
+                        perimeter += sqrt(2); // 斜めは√2を追加する
+                    }
+                    else {
+                        perimeter += 1;
+                    }
+                    */
+                    pre_x = now_x;
+                    pre_y = now_y;
+                    rot += index + (N - index); // 次の探索方向は今回見つかった方向の1つ前
+                    break;
+                }
+
+                // 終了条件
+                if (pre_x == init_x && pre_y == init_y)
+                    break;
+            }
+        }
+        std::cout << "Perimeter: " << perimeter << std::endl;
+
+
+        /*ブロブの円形度(Roundness)の計算*/
+        double roundness = 4 * M_PI * area / perimeter / perimeter;
+        std::cout << "Roundness: " << roundness << std::endl;
+
+        /*重心と主軸角度*/
+        int count = 0;
+        double x_g = 0.0;
+        double y_g = 0.0;
+        double x_d = 0.0;
+        double y_d = 0.0;
+        double xy_d = 0.0;
+        for (int y = 0; img_binary.rows; ++y) {
+            for (int x = 0; img_binary.cols; ++x) {
+                int lum = img_binary.data[y*img_binary.step+x];
+                if (lum == 255)  {
+                    count++;
+                    x_g += x;
+                    y_g += y;
+                }
+            }
+        }
+        x_g /= count;
+        y_g /= count;
+        // 慣性主軸の角度
+        for (int y = 0; y < img_binary.rows; ++y) {
+            for (int x = 0; x < img_binary.cols; ++x) {
+                x_d += (x - x_g) * (x - x_g);
+                y_d += (y - y_g) * (y - y_g);
+                xy_d += (x - x_g) * (y - y_g);
+            }
+        }
+        double angle = 0.5 * atan2(2 * xy_d, x_d - y_d) / M_PI : 180.0;
+        std::cout << "Angle: " << angle << std::endl;
+
+        // // OpenCV 面積・周囲長・円形度
+        // vector<vector<Point> > contours; // 輪郭
+        // findContours(img_binary, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+        // area = contourArea(Mat(contours[0]));          // 面積
+        // perimeter = arcLength(Mat(contours[0]), true); // 周囲長
+        // roundness = 4 * M_PI * area / perimeter / perimeter;
+        // cout << "OpenCV Area:" << area << endl;
+        // cout << "Perimeter:" << perimeter << endl;
+        // cout << "OpenCV Roundness:" << roundness << endl;
+
+        // // OpenCV 重心　慣性主軸の角度
+        // Moments m = moments(img_binary, true);
+        // // 面積
+        // area = m.m00;
+        // cout << "area: " << area << endl;
+        // // 重心
+        // x_g = m.m10 / m.m00;
+        // y_g = m.m01 / m.m00;
+        // cout << x_g << " " << y_g << endl;
+        // // 主軸の角度
+        // ang = 0.5 * atan2(2.0 * m.mu11, m.mu20 - m.mu02);
+        // cout << ang * 180 / M_PI << endl;
 
         waitKey(0);
     }
