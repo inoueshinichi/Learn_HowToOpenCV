@@ -1,5 +1,5 @@
 /**
- * @file multi_image_to_gray_temp.cpp
+ * @file alpha_brending.cpp
  * @author your name (you@domain.com)
  * @brief アルファブレンディング
  * @version 0.1
