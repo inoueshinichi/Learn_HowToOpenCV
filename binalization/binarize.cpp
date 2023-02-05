@@ -13,8 +13,6 @@
 #include <string>
 #include <iostream>
 
-#define CV_IMSHOW(mat) cv::imshow(#mat, mat);
-
 int main(int argc, char** argv)
 {
     try
