@@ -1,0 +1,43 @@
+/**
+ * @file test_utils.hpp
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2023-02-05
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+#pragma once
+
+// ディレクトリ操作 (mkdir, rmdir, stat, getcwd)
+#if defined(MSC_VER)
+#include <direct.h> // _mkdir, _rmdir, _getcwd, _getdrive, _chdir, _chdrive
+#else
+    #include <sys/stat.h> // mkdir
+    #include <unistd.h> // rmdir, getcwd, chdir
+#endif
+#include <errno.h>
+#include <cstring>
+
+#include <string>
+#include <vector>
+
+
+#define CURRENT_SOURCE_DIR "@CMAKE_CURRENT_SOURCE_DIR@"
+#define TEST_DATA_DIRNAME "TestData"
+#define MAXPATH_LEN 512
+
+std::string GetTestData(const char* filename)
+{
+    // std::vector<char> file_path(MAXPATH_LEN);
+    // std::memset(file_path.data(), '\0', MAXPATH_LEN);
+    // // カレントディレクトリの取得
+    // if (getcwd(file_path.data(), MAXPATH_LEN) == nullptr)
+    // {
+    //     std::abort();
+    // }
+    // return std::string(file_path.data()) + IMGSRC_REL_PATH + filename;
+
+    return std::string(CURRENT_SOURCE_DIR) + "/" + TEST_DATA_DIRNAME + "/" + filename;
+}

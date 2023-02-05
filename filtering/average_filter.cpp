@@ -8,11 +8,11 @@
  * @copyright Copyright (c) 2021
  * 
  */
-#include <iostream>
-#include <string>
-#include <cmath>
-#include <random>
+#include <test_utils.hpp>
 #include <opencv2/opencv.hpp>
+#include <string>
+#include <iostream>
+
 using namespace std;
 using namespace cv;
 
@@ -20,14 +20,16 @@ int main(int argc, char** argv)
 {
     try
     {
-        if (argc < 2)
-            throw ("few parameters.");
+        // テスト画像
+        string test_file = GetTestData("nekosan.jpg");
+        std::cout << "Test file path: " << test_file << std::endl;
 
         // 画像読み込み
         Mat img_src;
-        img_src = imread(argv[1], IMREAD_GRAYSCALE);
+        img_src = imread(test_file, IMREAD_GRAYSCALE);
         if (img_src.empty())
             throw ("failed open file.");
+        imshow("img_src", img_src);
 
         // 画像準備
         Mat img_dst;
@@ -61,7 +63,7 @@ int main(int argc, char** argv)
         }
 
         // OpenCV
-        // blur(img_src, img_dst6, Size(7, 7));
+        // blur(img_src, img_dst, Size(7, 7));
         imshow("img_dst", img_dst);
 
 
