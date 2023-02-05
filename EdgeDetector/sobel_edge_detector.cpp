@@ -8,29 +8,29 @@
  * @copyright Copyright (c) 2021
  * 
  */
-#include <iostream>
-#include <string>
-#include <cmath>
-#include <random>
+#include <test_utils.hpp>
 #include <opencv2/opencv.hpp>
-using namespace std;
-using namespace cv;
+#include <string>
+#include <iostream>
 
 int main(int argc, char** argv)
 {
     try
     {
-        if (argc < 2)
-            throw ("few parameters.");
+        // テスト画像
+        std::string test_file = GetTestData("nekosan.jpg");
+        std::cout << "Test file path: " << test_file << std::endl;
 
         // 画像読み込み
-        Mat img_src;
-        img_src = imread(argv[1], IMREAD_GRAYSCALE);
+        cv::Mat img_src;
+        img_src = cv::imread(test_file, cv::IMREAD_GRAYSCALE);
         if (img_src.empty())
-            throw ("failed open file.");
+            throw("failed open file.");
+        cv::imshow("img_src", img_src);
 
+#if defined(MY_SOBEL)
         // 画像準備
-        Mat img_dst1, img_dst2, img_dst3, img_dst4;
+        cv::Mat img_dst1, img_dst2, img_dst3, img_dst4;
         img_src.copyTo(img_dst1);
         img_src.copyTo(img_dst2);
         img_src.copyTo(img_dst3);
@@ -102,20 +102,21 @@ int main(int argc, char** argv)
         imshow("img_dst2", img_dst2);
         imshow("img_dst3", img_dst3);
         imshow("img_dst4", img_dst4);
-
+#endif
 
         // OpenCV: Sobelフィルタ
-        Mat img_sobel;
+        cv::Mat img_sobel, img_dst;
         img_src.copyTo(img_sobel);
-        Sobel(img_src, img_sobel, CV_32F, 1, 0, 3);
-        convertScaleAbs(img_sobel, img_sobel, 1, 0);
-        imshow("img_sobel", img_sobel);
+        
+        cv::Sobel(img_src, img_sobel, CV_32F, 1, 0, 3);
+        cv::convertScaleAbs(img_sobel, img_dst, 1, 0);
+        cv::imshow("img_dst", img_dst);
 
-        waitKey(0);
+        cv::waitKey(0);
     }
     catch (const char* str)
     {
-        cerr << str << endl;
+        std::cerr << str << std::endl;
     }
     return 0;
 }

@@ -8,29 +8,28 @@
  * @copyright Copyright (c) 2021
  * 
  */
-#include <iostream>
-#include <string>
-#include <cmath>
-#include <random>
+#include <test_utils.hpp>
 #include <opencv2/opencv.hpp>
-using namespace std;
-using namespace cv;
+#include <string>
+#include <iostream>
 
 int main(int argc, char** argv)
 {
     try
     {
-        if (argc < 2)
-            throw ("few parameters.");
+        // テスト画像
+        std::string test_file = GetTestData("nekosan.jpg");
+        std::cout << "Test file path: " << test_file << std::endl;
 
         // 画像読み込み
-        Mat img_src;
-        img_src = imread(argv[1], IMREAD_GRAYSCALE);
+        cv::Mat img_src;
+        img_src = cv::imread(test_file, cv::IMREAD_GRAYSCALE);
         if (img_src.empty())
-            throw ("failed open file.");
+            throw("failed open file.");
+        cv::imshow("img_src", img_src);
 
         // 画像準備
-        Mat img_dst1, img_dst2, img_dst3, img_dst4, img_dst5, img_dst6, img_dst7;
+        cv::Mat img_dst1, img_dst2, img_dst3, img_dst4, img_dst5, img_dst6, img_dst7;
         img_src.copyTo(img_dst1);
         img_src.copyTo(img_dst2);
         img_src.copyTo(img_dst3);
@@ -121,20 +120,20 @@ int main(int argc, char** argv)
                 img_dst7.data[y*img_dst7.step + x] = sum7;
             }
         }
-        imshow("img_dst1", img_dst1);
-        imshow("img_dst2", img_dst2);
-        imshow("img_dst3", img_dst3);
-        imshow("img_dst4", img_dst4);
-        imshow("img_dst5", img_dst5);
-        imshow("img_dst6", img_dst6);
-        imshow("img_dst7", img_dst7);
+        cv::imshow("img_dst1", img_dst1);
+        cv::imshow("img_dst2", img_dst2);
+        cv::imshow("img_dst3", img_dst3);
+        cv::imshow("img_dst4", img_dst4);
+        cv::imshow("img_dst5", img_dst5);
+        cv::imshow("img_dst6", img_dst6);
+        cv::imshow("img_dst7", img_dst7);
 
 
-        waitKey(0);
+        cv::waitKey(0);
     }
     catch (const char* str)
     {
-        cerr << str << endl;
+        std::cerr << str << std::endl;
     }
     return 0;
 }
