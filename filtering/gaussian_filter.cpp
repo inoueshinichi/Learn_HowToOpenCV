@@ -23,9 +23,10 @@ int main(int argc, char** argv)
 
         // 画像読み込み
         cv::Mat img_src;
-        img_src = cv::imread(argv[1], IMREAD_GRAYSCALE);
+        img_src = cv::imread(test_file, cv::IMREAD_GRAYSCALE);
         if (img_src.empty())
             throw ("failed open file.");
+        cv::imshow("img_src", img_src);
 
         // 画像準備
         cv::Mat img_dst;
@@ -35,14 +36,14 @@ int main(int argc, char** argv)
         // ここに処理を記述
 
         // ガウシアンオペレータによる画像平滑化
-        cv::GaussianBlur(img_src, img_dst, Size(11, 11), 1);
+        cv::GaussianBlur(img_src, img_dst, cv::Size(11, 11), 1);
         cv::imshow("img_dst", img_dst);
 
         cv::waitKey(0);
     }
     catch (const char* str)
     {
-        cerr << str << endl;
+        std::cerr << str << std::endl;
     }
     return 0;
 }

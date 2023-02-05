@@ -8,47 +8,47 @@
  * @copyright Copyright (c) 2021
  * 
  */
-#include <iostream>
-#include <string>
-#include <cmath>
-#include <random>
+#include <test_utils.hpp>
 #include <opencv2/opencv.hpp>
-using namespace std;
-using namespace cv;
+#include <string>
+#include <iostream>
 
 int main(int argc, char** argv)
 {
     try
     {
-        if (argc < 2)
-            throw ("few parameters.");
+        // テスト画像
+        std::string test_file = GetTestData("nekosan.jpg");
+        std::cout << "Test file path: " << test_file << std::endl;
 
         // 画像読み込み
-        Mat img_src;
-        img_src = imread(argv[1], IMREAD_GRAYSCALE);
+        cv::Mat img_src;
+        img_src = cv::imread(test_file, cv::IMREAD_GRAYSCALE);
         if (img_src.empty())
-            throw ("failed open file.");
+            throw("failed open file.");
+        cv::imshow("img_src", img_src);
 
         // 画像準備
-        Mat img_sharpening;
+        cv::Mat img_dst, img_sharpening;
+        img_src.copyTo(img_dst);
         img_src.copyTo(img_sharpening);
 
         // 鮮鋭化オペレータの作成
         float k = 1.0;
-        Mat op = Mat::ones(3, 3, CV_32F) * -k;
-        op.at<float>(1,1) = 1 + 8*k;
+        cv::Mat op = cv::Mat::ones(3, 3, CV_32F) * -k;
+        op.at<float>(1,1) = 1 + 8 * k;
 
         // 鮮鋭化フィルタ
         // 設定したオペレータでフィルタ
-        filter2D(img_src, img_sharpening, CV_32F, op);
-        convertScaleAbs(img_sharpening, img_sharpening, 1, 0);
-        imshow("img_sharpening", img_sharpening);
+        cv::filter2D(img_src, img_sharpening, CV_32F, op);
+        cv::convertScaleAbs(img_sharpening, img_dst, 1, 0);
+        cv::imshow("img_dst", img_dst);
 
-        waitKey(0);
+        cv::waitKey(0);
     }
     catch (const char* str)
     {
-        cerr << str << endl;
+        std::cerr << str << std::endl;
     }
     return 0;
 }

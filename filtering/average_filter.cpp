@@ -13,31 +13,29 @@
 #include <string>
 #include <iostream>
 
-using namespace std;
-using namespace cv;
-
 int main(int argc, char** argv)
 {
     try
     {
         // テスト画像
-        string test_file = GetTestData("nekosan.jpg");
+        std::string test_file = GetTestData("nekosan.jpg");
         std::cout << "Test file path: " << test_file << std::endl;
 
         // 画像読み込み
-        Mat img_src;
-        img_src = imread(test_file, IMREAD_GRAYSCALE);
+        cv::Mat img_src;
+        img_src = cv::imread(test_file, cv::IMREAD_GRAYSCALE);
         if (img_src.empty())
             throw ("failed open file.");
-        imshow("img_src", img_src);
+        cv::imshow("img_src", img_src);
 
         // 画像準備
-        Mat img_dst;
+        cv::Mat img_dst;
         img_src.copyTo(img_dst);
         
 
         // ここに処理を記述
 
+#if defined(MY_BLUR)
         // 平均化オペレータによる画像平滑化
         double op[3][3] = {
             { 1.0/9.0, 1.0/9.0, 1.0/9.0 },
@@ -61,17 +59,18 @@ int main(int argc, char** argv)
                 img_dst.data[y * img_dst.step + x] = sum;
             }
         }
+#endif
 
         // OpenCV
-        // blur(img_src, img_dst, Size(7, 7));
-        imshow("img_dst", img_dst);
+        cv::blur(img_src, img_dst, cv::Size(7, 7));
+        cv::imshow("img_dst", img_dst);
 
 
-        waitKey(0);
+        cv::waitKey(0);
     }
     catch (const char* str)
     {
-        cerr << str << endl;
+        std::cerr << str << std::endl;
     }
     return 0;
 }
