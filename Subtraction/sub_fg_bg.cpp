@@ -8,71 +8,84 @@
  * @copyright Copyright (c) 2021
  * 
  */
-#include <cstdio>
-#include <iostream>
-#include <string>
-#include <cmath>
-#include <random>
+#include <test_utils.hpp>
 #include <opencv2/opencv.hpp>
-using namespace std;
-using namespace cv;
 
 int main(int argc, char **argv)
 {
     try
     {
-        if (argc < 2)
-            throw("few parameters.");
-
         // 画像読み込み
-        vector<Mat> img_src_vec;
-        for (int i = 1; i < argc; ++i)
+        std::string test_file1 = GetTestData("lena.jpg");
+        std::string test_file2 = GetTestData("ラーメンのロゴ.jpg");
+        std::cout << "Test file 1 path: " << test_file1 << std::endl;
+        std::cout << "Test file 2 path: " << test_file2 << std::endl;
+
+        std::vector<cv::Mat> img_src_vec;
+        img_src_vec.reserve(2);
+        cv::Mat img_in;
+        img_in = cv::imread(test_file1, cv::IMREAD_GRAYSCALE);
+        img_src_vec.emplace_back(img_in);
+        img_in = cv::imread(test_file2, cv::IMREAD_GRAYSCALE);
+        img_src_vec.emplace_back(img_in);
+        if (img_src_vec.empty())
+            throw("failed open file.");
+        std::printf("Got %ld images\n", img_src_vec.size());
+
+        int rows1 = img_src_vec[0].rows;
+        int cols1 = img_src_vec[0].cols;
+        int rows2 = img_src_vec[1].rows;
+        int cols2 = img_src_vec[1].cols;
+        if (rows1 != rows2)
         {
-            Mat img_src = imread(argv[i], IMREAD_GRAYSCALE);
-
-            if (img_src.empty())
-                throw("failed open file.");
-
-            img_src_vec.push_back(img_src);
+            std::printf("rows1: %d, rows2: %d\n", rows1, rows2);
+            throw ("rows1 != rows2");
         }
-        std::printf("Got %d images\n", img_src_vec.size());
+        if (cols1 != cols2)
+        {
+            std::printf("cols1: %d, cols2: %d\n", cols1, cols2);
+            throw ("cols1 != cols2");
+        }
 
         // 画像準備
-        Mat img_dst;
-        Mat img_fg; // 前景
-        Mat img_bg; // 背景
-        Mat img_diff; // 差分
-        Mat img_binary; // 2値画像
-        Mat img_mask1, img_mask2; // マスク画像
+        cv::Mat img_fg; // 前景
+        cv::Mat img_bg; // 背景
+        cv::Mat img_diff; // 差分
+        cv::Mat img_bin; // 2値画像
+        cv::Mat img_mask1, img_mask2; // マスク画像
         
         // 前景/背景 画像
-        img_src_vec[0].copyTo(img_fg);
-        img_src_vec[1].copyTo(img_bg);
+        img_fg = img_src_vec[0].clone();
+        img_bg = img_src_vec[1].clone();
+        // img_src_vec[0].copyTo(img_fg);
+        // img_src_vec[1].copyTo(img_bg);
+
+        CV_IMSHOW(img_fg)
+        CV_IMSHOW(img_bg)
 
         // 差分画像
-        absdiff(img_fg, img_bg, img_diff);
+        cv::absdiff(img_fg, img_bg, img_diff);
+        CV_IMSHOW(img_diff)
 
         // 差分画像の2値化
-        threshold(img_diff, img_binary, 50, 255, THRESH_BINARY);
+        cv::threshold(img_diff, img_bin, 50, 255, cv::THRESH_BINARY);
+        CV_IMSHOW(img_bin)
 
         // マスク画像
-        dilate(img_binary, img_mask1, Mat(), Point(-1, -1), 4);
-        erode(img_mask1, img_mask2, Mat(), Point(-1, -1), 4);
+        int n = 4;
+        cv::dilate(img_bin, img_mask1, cv::Mat(), cv::Point(-1, -1), n);
+        cv::erode(img_mask1, img_mask2, cv::Mat(), cv::Point(-1, -1), n);
 
         // 前景画像から抽出
-        bitwise_and(img_fg, img_mask2, img_dst);
+        cv::Mat img_masked2_fg;
+        cv::bitwise_and(img_fg, img_mask2, img_masked2_fg);
+        CV_IMSHOW(img_masked2_fg)
 
-        imshow("img_fg", img_fg);
-        imshow("img_bg", img_bg);
-        imshow("img_mask1", img_mask1);
-        imshow("img_mask2", img_mask2);
-        imshow("img_dst", img_dst);
-
-        waitKey(0);
+        cv::waitKey(0);
     }
     catch (const char *str)
     {
-        cerr << str << endl;
+        std::cerr << str << std::endl;
     }
     return 0;
 }
