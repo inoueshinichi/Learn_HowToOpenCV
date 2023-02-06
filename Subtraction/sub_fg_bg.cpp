@@ -16,8 +16,8 @@ int main(int argc, char **argv)
     try
     {
         // 画像読み込み
-        std::string test_file1 = GetTestData("lena.jpg");
-        std::string test_file2 = GetTestData("ラーメンのロゴ.jpg");
+        std::string test_file1 = GetTestData("catmod.jpg");
+        std::string test_file2 = GetTestData("cat.jpg");
         std::cout << "Test file 1 path: " << test_file1 << std::endl;
         std::cout << "Test file 2 path: " << test_file2 << std::endl;
 
@@ -68,7 +68,7 @@ int main(int argc, char **argv)
         CV_IMSHOW(img_diff)
 
         // 差分画像の2値化
-        cv::threshold(img_diff, img_bin, 50, 255, cv::THRESH_BINARY);
+        cv::threshold(img_diff, img_bin, 30, 255, cv::THRESH_BINARY);
         CV_IMSHOW(img_bin)
 
         // マスク画像
