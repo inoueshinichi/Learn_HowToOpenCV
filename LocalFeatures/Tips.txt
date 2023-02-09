@@ -1,0 +1,48 @@
+参考  
+https://qiita.com/hmichu/items/f5f1c778a155c7c414fd  
+https://www.slideshare.net/hironobufujiyoshi/miru2013sift  
+# 特徴点と特徴点記述子
+
+基底クラスfeatures2dの派生  
+
+### 基本モジュール  
+
+| 手法名 | モジュール名 | 特徴点検出 | 局所特徴量 | 備考 |  
+| :-- | :-- | --- | --- | :-- |   
+| goodFeaturesToTrack | cv::GFTTDetector | ◯ | - | EigenValue法とHarris法 |
+| AGAST | cv::AgastFeatureDetector | ◯ | - | - |
+| FAST | cv::FastFeatureDetector | ◯ | - | - |
+| MSER | cv::MSER | ◯ | - | - |
+| BRISK | cv::BRISK | ◯ | ◯ | バイナリ特徴 |
+| KAZE | cv::KAZE | ◯ | ◯ | スケール特徴 |
+| ORB | cv::ORB | ◯ | ◯ | バイナリ特徴 |
+| AKAZE | cv::AKAZE | ◯ | ◯ | バイナリ特徴 |
+
+### 拡張モジュール(多分特許などが関係？)
+| 手法名 | モジュール名 | 特徴点検出 | 局所特徴量 | 備考 |  
+| :-- | :-- | --- | --- | :-- |
+| Star | cv::xfeatures2d::StarDetector | ◯ | - | - |
+| MSD | cv::xfeatures2d::MSDDetector | ◯ | - | - |
+| LATCH | cv::xfeatures2d::LATCH | - | ◯ | バイナリ特徴 |
+| LUCID | cv::xfeatures2d::LUCID | - | ◯ | - |
+| BRIEF | cv::xfeatures2d::BriefDescriptorExtractor | - | ◯ | バイナリ特徴 |
+| DAISY | cv::xfeatures2d::DAISY | - | ◯ | 実数ベクトル |
+| FREAK | cv::xfeatures2d::FREAK | - | ◯ | バイナリ特徴 |
+| SIFT | cv::xfeatures2d::SIFT | ◯ | ◯ | 実数ベクトル |
+| SURF | cv::xfeatures2d::SURF | ◯ | ◯ | 実数ベクトル |
+
+# マッチング
+| タイプ | 比較値 | Signature | 探索手法 | 対象手法 |
+| :-- | :-- | :-- | :-- | :-- |
+| BruteForce | L2ノルム | NORM_L2 | 全探索 | SIFT, SURFなど |
+| BruteForce-1 | L1ノルム | NORM_L1 | 全探索 | SIFT, SURFなど | 
+| BruteForce-Hamming | ハミング距離 | NORM_HAMMING | 全探索 | ORB, BRISK, BRIEFなど |
+| BruteForce-Hamming(2) | ハミング距離(2) | NORM_HAMMING2 | 全探索 | ORB |
+| FlannBased | flannアルゴリズムに基づく値 | - | 最近傍探索 | - |
+
+# メソッド  
+| メソッド名 | 内容 |
+| :-- | :-- |
+| match | 最も良い点を探す |
+| knnMatch | 上位k個の最も良い点を探す |
+| radiusMatch | 特徴量記述の空間で閾値以下の点を探す |
