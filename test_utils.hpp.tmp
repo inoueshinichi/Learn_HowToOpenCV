@@ -26,11 +26,14 @@
 #include <set>
 #include <iostream>
 
+#include <functional>
+
 
 #define CURRENT_SOURCE_DIR "@CMAKE_CURRENT_SOURCE_DIR@"
 #define TEST_DATA_DIRNAME "TestData"
 #define MAXPATH_LEN 512
 
+// テストデータのファイルパスの取得
 std::string GetTestData(const char* filename)
 {
     // std::vector<char> file_path(MAXPATH_LEN);
@@ -45,10 +48,40 @@ std::string GetTestData(const char* filename)
     return std::string(CURRENT_SOURCE_DIR) + "/" + TEST_DATA_DIRNAME + "/" + filename;
 }
 
-
-/////////
-// OpenCV
-/////////
+//////////////////
+// OpenCVのUtility
+//////////////////
 #define CV_IMSHOW(mat) cv::imshow(#mat, mat);
 
 #define CV_TYPE_LOG(mat) std::printf("Type of %s : %s\n", #mat, cv::typeToString(mat.type()).c_str());
+
+#define CV_DEFINE_PROCESSFRAME                                       \
+void ProcessFrame(unsigned int deviceID,                             \
+     std::function<void(const cv::Mat &, const cv::Mat &)> process)  \
+{                                                                    \
+    cv::VideoCapture capture(0);                                     \
+    if (!capture.open(0))                                            \
+    {                                                                \
+        throw("camera not found!");                                  \
+    }                                                                \
+                                                                     \
+    cv::Mat currentFrame, lastFrame;                                 \
+    bool isGetedFirstFrame = false;                                  \
+                                                                     \
+    while (true)                                                     \
+    {                                                                \
+        capture >> currentFrame; /*フレーム画像を取得*/                 \
+                                                                     \
+        if (!isGetedFirstFrame)                                      \
+        {                                                            \
+            currentFrame.copyTo(lastFrame);                          \
+            isGetedFirstFrame = true;                                \
+        }                                                            \
+                                                                     \
+        process(currentFrame, lastFrame); /*各フレームで行う処理*/      \
+        currentFrame.copyTo(lastFrame); /*前フレーム*/                 \
+                                                                     \
+        if (cv::waitKey(1) >= 0)                                     \
+            break;                                                   \
+    }                                                                \
+}
