@@ -1,72 +1,102 @@
 /**
  * @file alpha_brending.cpp
  * @author your name (you@domain.com)
- * @brief アルファブレンディング
+ * @brief
  * @version 0.1
- * @date 2021-06-01
- * 
- * @copyright Copyright (c) 2021
- * 
+ * @date 2023-02-09
+ *
+ * @copyright Copyright (c) 2023
+ *
  */
-#include <cstdio>
-#include <iostream>
-#include <string>
-#include <cmath>
-#include <random>
+#include <test_utils.hpp>
 #include <opencv2/opencv.hpp>
-using namespace std;
-using namespace cv;
+
 
 int main(int argc, char **argv)
 {
     try
     {
-        if (argc < 2)
-            throw("few parameters.");
-
         // 画像読み込み
-        vector<Mat> img_src_vec;
-        for (int i = 1; i < argc; ++i)
+        std::string test_file1 = GetTestData("catmod.jpg");
+        std::string test_file2 = GetTestData("cat.jpg");
+        std::cout << "Test file 1 path: " << test_file1 << std::endl;
+        std::cout << "Test file 2 path: " << test_file2 << std::endl;
+
+        std::vector<cv::Mat> img_src_vec;
+        img_src_vec.reserve(2);
+        cv::Mat img_in;
+        img_in = cv::imread(test_file1, cv::IMREAD_COLOR);
+        img_src_vec.emplace_back(img_in);
+        img_in = cv::imread(test_file2, cv::IMREAD_COLOR);
+        img_src_vec.emplace_back(img_in);
+        if (img_src_vec.empty())
+            throw("failed open file.");
+        std::printf("Got %ld images\n", img_src_vec.size());
+
+        int rows1 = img_src_vec[0].rows;
+        int cols1 = img_src_vec[0].cols;
+        int rows2 = img_src_vec[1].rows;
+        int cols2 = img_src_vec[1].cols;
+        int ch1 = img_src_vec[0].channels();
+        int ch2 = img_src_vec[1].channels();
+        if (rows1 != rows2)
         {
-            Mat img_src = imread(argv[i], IMREAD_GRAYSCALE);
-
-            if (img_src.empty())
-                throw("failed open file.");
-
-            img_src_vec.push_back(img_src);
+            std::printf("rows1: %d, rows2: %d\n", rows1, rows2);
+            throw("rows1 != rows2");
         }
-        std::printf("Got %d images\n", img_src_vec.size());
+        if (cols1 != cols2)
+        {
+            std::printf("cols1: %d, cols2: %d\n", cols1, cols2);
+            throw("cols1 != cols2");
+        }
+        if (ch1 != ch2)
+        {
+            std::printf("ch1: %d, ch2: %d\n", ch1, ch2);
+            throw("ch1 != ch2");
+        }
 
-        // 画像準備
-        Mat img_src1, img_src2;
-        img_src1 = img_src_vec[0];
-        img_src2 = img_src_vec[1];
-        int H = img_src1.rows;
-        int W = img_src1.cols;
-        Mat img_dst = Mat::zeros(Size(W, H), CV_8UC1);
+        CV_TYPE_LOG(img_src_vec[0])
+        CV_TYPE_LOG(img_src_vec[1])
 
-        // アルファブレンディング(今回はα=0.5)
+        int width = cols1;
+        int height = rows1;
+        int channels = ch1;
+
+        // アルファブレンド
+        cv::Mat img_alpha_brend = cv::Mat::zeros(cv::Size(width, height), img_src_vec[0].type());
         const double alpha = 0.5;
-        for (int y = 0; y < H; ++y) {
-            for (int x = 0; x < W; ++x) {
-                auto val1 = img_src1.data[y * img_src1.step + x];
-                auto val2 = img_src2.data[y * img_src2.step + x];
-                img_dst.data[y * img_dst.step + x] = alpha * val1 + (1 - alpha) * val2;
+
+// #define MY_ALPHA_BREND
+#if defined(MY_ALPHA_BREND)
+
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                for (int c = 0; c < channels; ++c)
+                {
+                    uchar v1 = img_src_vec[0].data[y * img_src_vec[0].step + x * channels + c];
+                    uchar v2 = img_src_vec[1].data[y * img_src_vec[1].step + x * channels + c];
+                    img_alpha_brend.data[y * img_alpha_brend.step + x * channels + c] =
+                        cv::saturate_cast<uchar>(alpha * v1 + (1.0 - alpha) * v2);
+                }
             }
         }
+#else
 
         // OpenCVによるアルファブレンディング
-        // addWeighted(img_src1, alpha, img_src2, (1 - alpha), 0, img_dst);
+        cv::addWeighted(img_src_vec[0], alpha, img_src_vec[1], (1 - alpha), 0, img_alpha_brend);
 
-        imshow("img_src1", img_src1);
-        imshow("img_src2", img_src2);
-        imshow("img_dst", img_dst);
+#endif
+        CV_IMSHOW(img_src_vec[0])
+        CV_IMSHOW(img_src_vec[1])
+        CV_IMSHOW(img_alpha_brend)
 
-        waitKey(0);
+        cv::waitKey(0);
     }
     catch (const char *str)
     {
-        cerr << str << endl;
+        std::cerr << str << std::endl;
     }
     return 0;
 }

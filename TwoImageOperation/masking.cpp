@@ -1,98 +1,111 @@
 /**
- * @file masking.cpp
+ * @file mask_add.cpp
  * @author your name (you@domain.com)
- * @brief マスク合成
+ * @brief 
  * @version 0.1
- * @date 2021-06-01
+ * @date 2023-02-09
  * 
- * @copyright Copyright (c) 2021
+ * @copyright Copyright (c) 2023
  * 
  */
-#include <cstdio>
-#include <iostream>
-#include <string>
-#include <cmath>
-#include <random>
+#include <test_utils.hpp>
 #include <opencv2/opencv.hpp>
-using namespace std;
-using namespace cv;
+
 
 int main(int argc, char **argv)
 {
     try
     {
-        if (argc < 2)
-            throw("few parameters.");
-
         // 画像読み込み
-        vector<Mat> img_src_vec;
-        for (int i = 1; i < argc; ++i)
+        std::string test_file1 = GetTestData("catmod.jpg");
+        std::string test_file2 = GetTestData("cat.jpg");
+        std::cout << "Test file 1 path: " << test_file1 << std::endl;
+        std::cout << "Test file 2 path: " << test_file2 << std::endl;
+
+        std::vector<cv::Mat> img_src_vec;
+        img_src_vec.reserve(2);
+        cv::Mat img_in;
+        img_in = cv::imread(test_file1, cv::IMREAD_COLOR);
+        img_src_vec.emplace_back(img_in);
+        img_in = cv::imread(test_file2, cv::IMREAD_COLOR);
+        img_src_vec.emplace_back(img_in);
+        if (img_src_vec.empty())
+            throw("failed open file.");
+        std::printf("Got %ld images\n", img_src_vec.size());
+
+        int rows1 = img_src_vec[0].rows;
+        int cols1 = img_src_vec[0].cols;
+        int rows2 = img_src_vec[1].rows;
+        int cols2 = img_src_vec[1].cols;
+        int ch1 = img_src_vec[0].channels();
+        int ch2 = img_src_vec[1].channels();
+        if (rows1 != rows2)
         {
-            Mat img_src = imread(argv[i], IMREAD_GRAYSCALE);
-
-            if (img_src.empty())
-                throw("failed open file.");
-
-            img_src_vec.push_back(img_src);
+            std::printf("rows1: %d, rows2: %d\n", rows1, rows2);
+            throw("rows1 != rows2");
         }
-        std::printf("Got %d images\n", img_src_vec.size());
-
-        // 画像準備
-        Mat img_src1, img_src2;
-        img_src1 = img_src_vec[0];
-        img_src2 = img_src_vec[1];
-        int H = img_src1.rows;
-        int W = img_src1.cols;
-        Mat img_dst = Mat::zeros(Size(H, W), CV_8UC1);
-        Mat img_mskg, img_msk, img_mskn;
-        Mat img_s1m, img_s2m;
-
-        // マスク画像生成のための2値化
-        img_mskg = threshold(img_src1, img_mskg, 170, 255, THRESH_BINARY_INV);
-        imshow("img_mskg", img_mskg);
-
-        // マスク画像（カラー）生成
-        //vector<Mat> channels;
-        //channels.push_back(img_mskg); // Rのマスク
-        //channels.push_back(img_mskg); // Gのマスク
-        //channels.push_back(img_mskg); // Bのマスク
-        //merge(channels, img_msk); // RGBマスク
-
-        img_src1.copyTo(img_msk);
-        cout << "channels() of img_mskg: " << img_mskg.channels() << endl;
-        cout << "channels() of img_msk: " << img_msk.channels() << endl;
-        for (int y = 0; y < img_msk.rows; y++)
+        if (cols1 != cols2)
         {
-            for (int x = 0; x < img_msk.cols; x++)
-            {
-                for (int i = 0; i < 3; i++)
-                    img_msk.data[y * img_msk.step + x * img_msk.channels() + i] = img_mskg.data[y * img_mskg.step + x];
-            }
+            std::printf("cols1: %d, cols2: %d\n", cols1, cols2);
+            throw("cols1 != cols2");
         }
-        imshow("img_msk", img_msk);
+        if (ch1 != ch2)
+        {
+            std::printf("ch1: %d, ch2: %d\n", ch1, ch2);
+            throw("ch1 != ch2");
+        }
 
-        // 入力画像１からマスク画像の部分だけを切り出す（切り出し画像１の生成）: 各画素の3チャンネル（RGB）に対して、bit演算（AND）を行う。 8bit x 3
-        // マスク値：255 = 0b11111111, 0 = 0b00000000
-        bitwise_and(img_src1, img_msk, img_s1m);
+        CV_TYPE_LOG(img_src_vec[0])
+        CV_TYPE_LOG(img_src_vec[1])
 
-        // マスク画像の反転
-        bitwise_not(img_msk, img_mskn);
+        int width = cols1;
+        int height = rows1;
+        int channels = ch1;
 
-        // 入力画像２からマスク画像の反転部分だけを切り出す（切り出し画像２の生成）
-        bitwise_and(img_src2, img_mskn, img_s2m);
+        // 指定領域
+        cv::Mat img_mask = cv::Mat::zeros(cv::Size(width, height), CV_8UC1);
+        cv::Point p1(width/4, height/4);
+        cv::Point p2(width*3/4, height*3/4);
+        cv::rectangle(img_mask, p1, p2, cv::Scalar(255), -1);
+        CV_IMSHOW(img_mask)
 
-        // 切り出し画像１と切り出し画像２の合成
-        bitwise_or(img_s1m, img_s2m, img_dst);
+        // 指定領域の抽出
+        cv::Mat img_masked;
+        img_src_vec[0].copyTo(img_masked, img_mask);
+        CV_IMSHOW(img_masked)
 
-        imshow("img_src1", img_src1);
-        imshow("img_src2", img_src2);
-        imshow("img_dst", img_dst);
+        // 指定領域外の抽出
+        cv::Mat img_ng_mask;
+        cv::bitwise_not(img_mask, img_ng_mask); // 論理否定
+        cv::Mat img_ng_masked;
+        img_src_vec[0].copyTo(img_ng_masked, img_ng_mask);
+        CV_IMSHOW(img_ng_masked)
 
-        waitKey(0);
+        // 指定領域の足し算
+        cv::Mat img_mask_add = cv::Mat::zeros(cv::Size(width, height), img_src_vec[0].type());
+        cv::add(img_src_vec[0], img_src_vec[1], img_mask_add, img_mask);
+        CV_IMSHOW(img_mask_add)
+
+        // 指定領域で論理積
+        cv::Mat img_masked_and;
+        cv::bitwise_and(img_src_vec[0], img_src_vec[1], img_masked_and, img_mask);
+        CV_IMSHOW(img_masked_and)
+
+        // 指定領域での論理和
+        cv::Mat img_masked_or;
+        cv::bitwise_or(img_src_vec[0], img_src_vec[1], img_masked_or, img_mask);
+        CV_IMSHOW(img_masked_or)
+
+        // 指定領域での排他的論理和
+        cv::Mat img_masked_xor;
+        cv::bitwise_xor(img_src_vec[0], img_src_vec[1], img_masked_xor, img_mask);
+        CV_IMSHOW(img_masked_xor)
+
+        cv::waitKey(0);
     }
     catch (const char *str)
     {
-        cerr << str << endl;
+        std::cerr << str << std::endl;
     }
     return 0;
 }
