@@ -79,7 +79,7 @@ void ProcessFrame(unsigned int deviceID,                             \
         }                                                            \
                                                                      \
         process(currentFrame, lastFrame); /*各フレームで行う処理*/      \
-        currentFrame.copyTo(lastFrame); /*前フレーム*/                 \
+        lastFrame = currentFrame; /*前フレーム*/                      \
                                                                      \
         if (cv::waitKey(1) >= 0)                                     \
             break;                                                   \
