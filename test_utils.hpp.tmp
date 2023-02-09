@@ -22,6 +22,8 @@
 
 #include <string>
 #include <vector>
+#include <array>
+#include <set>
 #include <iostream>
 
 
@@ -48,3 +50,5 @@ std::string GetTestData(const char* filename)
 // OpenCV
 /////////
 #define CV_IMSHOW(mat) cv::imshow(#mat, mat);
+
+#define CV_TYPE_LOG(mat) std::printf("Type of %s : %s\n", #mat, cv::typeToString(mat.type()).c_str());
