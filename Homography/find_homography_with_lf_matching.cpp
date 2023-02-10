@@ -129,11 +129,25 @@ int main(int argc, char **argv)
                     inlierMatches.emplace_back(goodMatches[i]);
                     inlierPoints1.emplace_back(goodPoints1[i]);
                     inlierPoints2.emplace_back(goodPoints2[i]);
+
+                    // if (inlierMatches.size() == 4)
+                    // {
+                    //     break; // 4点のみ使う
+                    // }
                 }
             }
 
             // インライアーな対応点のみを用いて再度ホモグラフィ行列Hを計算
             H = cv::findHomography(inlierPoints1, inlierPoints2, maskH, cv::RANSAC, ransacReprojThreshold);
+            // H = cv::getPerspectiveTransform(inlierPoints1, inlierPoints2, cv::DECOMP_LU); // 必ず4点のみ
+            /* 第3引数 solver
+                DECOMP_LU (default)
+                DECOMP_SVD
+                DECOMP_EIG
+                DECOMP_CHOLESKY
+                DECOMP_QR
+                DECOMP_NORMAL
+            */
 
             // 表示用画像
             int width = curFrame.cols;
