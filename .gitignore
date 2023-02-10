@@ -1,5 +1,7 @@
 # Directory
-/build
-/.vscode
+build/
+.vscode/
+third-party/
+
 
 
