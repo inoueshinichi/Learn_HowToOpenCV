@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.14.6)
 ###############################################################################
 # Policy
 ###############################################################################
-cmake_policy(SET CMP0115 NEW) # explicit source file extention symbol
+cmake_policy(SET CMP0115 OLD) # explicit source file extention symbol
 
 # <= CMake3.*.*でAppleClangをコンパイラIDとして認識させる
 # Report AppleClang separately from Clang. Their version numbers are different.
@@ -65,7 +65,10 @@ message(STATUS ">>>>> C++ compiler `Relwithdebinfo` flags: ${CMAKE_CXX_FLAGS_REL
 
 message(STATUS "========== [END] C++ All Target Options ==========")
 
-
+###############################################################################
+# OpenCV
+###############################################################################
+add_subdirectory(third-party)
 
 ###############################################################################
 # Test Sample Dirs
@@ -90,7 +93,7 @@ add_subdirectory(GeometricFeatures)
 add_subdirectory(Labeling)
 add_subdirectory(TwoImageOperation)
 add_subdirectory(LocalFeatures)
-# add_subdirectory()
+add_subdirectory(ObjectDetection)
 # add_subdirectory()
 # add_subdirectory()
 # add_subdirectory()
