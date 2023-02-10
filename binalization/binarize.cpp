@@ -10,8 +10,7 @@
  */
 #include <test_utils.hpp>
 #include <opencv2/opencv.hpp>
-#include <string>
-#include <iostream>
+
 
 int main(int argc, char** argv)
 {
