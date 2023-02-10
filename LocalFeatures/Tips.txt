@@ -31,16 +31,26 @@ https://www.slideshare.net/hironobufujiyoshi/miru2013sift
 | SIFT | cv::xfeatures2d::SIFT | ◯ | ◯ | 実数ベクトル |
 | SURF | cv::xfeatures2d::SURF | ◯ | ◯ | 実数ベクトル |
 
-# マッチング
+# 特徴点マッチング
+cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMather::create(`以下のタイプ`);  
 | タイプ | 比較値 | Signature | 探索手法 | 対象手法 |
 | :-- | :-- | :-- | :-- | :-- |
-| BruteForce | L2ノルム | NORM_L2 | 全探索 | SIFT, SURFなど |
-| BruteForce-1 | L1ノルム | NORM_L1 | 全探索 | SIFT, SURFなど | 
-| BruteForce-Hamming | ハミング距離 | NORM_HAMMING | 全探索 | ORB, BRISK, BRIEFなど |
+| BruteForce | L2ノルム | NORM_L2 | 全探索 | SIFT, SURFなどの実数ベクトル特徴量 |
+| BruteForce-1 | L1ノルム | NORM_L1 | 全探索 | SIFT, SURFなどの実数ベクトル特徴量 | 
+| BruteForce-Hamming | ハミング距離 | NORM_HAMMING | 全探索 | ORB, BRISK, BRIEFなどのバイナリ特徴量 |
 | BruteForce-Hamming(2) | ハミング距離(2) | NORM_HAMMING2 | 全探索 | ORB |
 | FlannBased | flannアルゴリズムに基づく値 | - | 最近傍探索 | - |
 
-# メソッド  
+### 全探索に限定したい場合  
+cv::Ptr<cv::BFMatcher> matcher = cv::BFMatcher::create(`以下のタイプ`);  
+| タイプ | 比較値 |
+| :-- | :-- |
+| NORM_L1 | L1ノルム |
+| NORM_L2 | L2ノルム | 
+| NORM_HAMMING | ハミング距離 |
+| NORM_HAMMING2 | ハミング距離2 (*for ORB) |
+
+### マッチングペアの選択メソッド  
 | メソッド名 | 内容 |
 | :-- | :-- |
 | match | 最も良い点を探す |
