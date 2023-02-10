@@ -10,8 +10,6 @@
  */
 #include <test_utils.hpp>
 #include <opencv2/opencv.hpp>
-#include <string>
-#include <iostream>
 
 int main(int argc, char** argv)
 {
@@ -45,24 +43,24 @@ int main(int argc, char** argv)
         // オープニング１回　クロージング１回
         cv::Mat img_o1c1;
         n = 1;
-        morphologyEx(img_bin, img_tmp, cv::MORPH_OPEN, element8, cv::Point(-1, -1), n);
-        morphologyEx(img_tmp, img_o1c1, cv::MORPH_CLOSE, element8, cv::Point(-1, -1), n);
-        imshow("img_o1c1", img_o1c1);
+        cv::morphologyEx(img_bin, img_tmp, cv::MORPH_OPEN, element8, cv::Point(-1, -1), n);
+        cv::morphologyEx(img_tmp, img_o1c1, cv::MORPH_CLOSE, element8, cv::Point(-1, -1), n);
+        cv::imshow("img_o1c1", img_o1c1);
 
 
         // オープニング５回　クロージング５回
         cv::Mat img_o5c5;
         n = 5;
-        morphologyEx(img_bin, img_tmp, cv::MORPH_OPEN, element8, cv::Point(-1, -1), n);
-        morphologyEx(img_tmp, img_o5c5, cv::MORPH_CLOSE, element8, cv::Point(-1, -1), n);
-        imshow("img_o5c5", img_o5c5);
+        cv::morphologyEx(img_bin, img_tmp, cv::MORPH_OPEN, element8, cv::Point(-1, -1), n);
+        cv::morphologyEx(img_tmp, img_o5c5, cv::MORPH_CLOSE, element8, cv::Point(-1, -1), n);
+        cv::imshow("img_o5c5", img_o5c5);
 
         // オープニング10回　クロージング10回
         cv::Mat img_o10c10;
         n = 10;
-        morphologyEx(img_bin, img_tmp, cv::MORPH_OPEN, element8, cv::Point(-1, -1), n);
-        morphologyEx(img_tmp, img_o10c10, cv::MORPH_CLOSE, element8, cv::Point(-1, -1), n);
-        imshow("img_o10c10", img_o10c10);
+        cv::morphologyEx(img_bin, img_tmp, cv::MORPH_OPEN, element8, cv::Point(-1, -1), n);
+        cv::morphologyEx(img_tmp, img_o10c10, cv::MORPH_CLOSE, element8, cv::Point(-1, -1), n);
+        cv::imshow("img_o10c10", img_o10c10);
 
         cv::waitKey(0);
     }
