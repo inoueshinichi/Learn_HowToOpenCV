@@ -45,6 +45,14 @@ int main(int argc, char **argv)
 
         // 射影変換行列
         cv::Mat perspective_matrix = cv::getPerspectiveTransform(pts1, pts2);
+        /* 第3引数 solver
+                DECOMP_LU (default)
+                DECOMP_SVD
+                DECOMP_EIG
+                DECOMP_CHOLESKY
+                DECOMP_QR
+                DECOMP_NORMAL
+        */
 
         // 射影変換
         cv::warpPerspective(img_src, img_perspective, perspective_matrix, img_src.size(), cv::INTER_LINEAR);
