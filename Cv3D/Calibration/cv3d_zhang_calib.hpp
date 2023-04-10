@@ -10,99 +10,56 @@
  */
 #pragma once
 
-#include <cv3d_def_ponts.hpp>
+#include <opencv4/opencv2/calib3d.hpp> // calibrateCamera
+#include <opencv4/opencv2/core/types.hpp> // TermCriteria
 
-// カメラ内部パラメータ
-struct CamIntrinsicParams
-{
-    double mForcasX;
-    double mForcasY;
-    double mCenterX;   // 画像中心 X
-    double mCenterY;   // 画像中心 Y
-    double mTiltPlane; // 理想投影面に対する実際の投影面の傾き
-    double mSkew;      // mTilePlane=0のとき, 0
-};
+#include <cv3d_def.hpp>
 
-// レンズ収差
-// (k1,k2,p1,p2[,k3[,k4,k5,k6[,s1,s2,s3,s4[,tauX,tauY]]]]). 4, 5, 8, 12 or 14要素
-struct LenDistortParams
-{
-    double mK1;
-    double mK2;
-    double mP1;
-    double mP2;
-    double mK3;
-    double mK4;
-    double mK5;
-    double mK6;
-    double mS1;
-    double mS2;
-    double mS3;
-    double mS4;
-    double mTauX;
-    double mTauY;
-};
-
-// カメラ外部パラメータ
-struct CamExtrinsicParams
-{
-    double mR11;
-    double mR12;
-    double mR13;
-    double mR21;
-    double mR22;
-    double mR23;
-    double mR31;
-    double mR32;
-    double mR33;
-    double mTx;
-    double mTy;
-    double mTz;
-};
-
-// カメラ座標への透視投影変換行列
-struct TransformViewMatrix
-{
-    // 行列形状(3, 4). 同次座標系形式. 列優先データ(C/C++). 列優先表現.
-    double mP11; // R11
-    double mP12; // R12
-    double mP13; // R13
-    double mP14; // Tx
-    double mP21; // R21
-    double mP22; // R22
-    double mP23; // R23
-    double mP24; // Ty
-    double mP31; // R31
-    double mP32; // R32
-    double mP33; // R33
-    double mP34; // Tx1
-};
+#include <iostream>
+#include <sstream>
 
 
 // ZhangCalibの戻り値
 struct RetZhangCalib
 {
-    CamIntrinsicParams mRetCamInParams;
-    LenDistortParams mRetLenDisParams;
-    std::vector<CamExtrinsicParams> mRetCamExParamsVec;
+    CamIntrinsicParams mCamInParams;
+    LenDistortParams mLenDisParams;
+    std::vector<RotVector> mRetRotations;
+    std::vector<Translation> mTranslations;
 
-    TransformViewMatrix GetTransformView(int index);
+    TransformViewMatrix3x4 GetTransformViewMatrix3x4(int index)
+    {
+        assert(index >= 0);
+        assert(index < mRetRotVectors.size());
+
+        TransformViewMatrix viewMat;
+
+        return viewMat;
+    }
+
+    CamExtrinsicMatrix3x4 GetExtrinsicMatrix3x4(int index)
+    {
+        assert(index >= 0);
+        assert(index < mRetRotVectors.size());
+
+
+    }
 };
 
-#include <opencv4/opencv2/calib3d.hpp>
 
 /*キャリブレーション*/
-RetZhangCalib 
-CalibZhang(const BatchImagePoints &batchImagePoints, 
-           const BatchSpacePoints &batchSpacePoints,
-           const CamIntrinsicParams &initCamInParams,
-           int height,
-           int width)
+RetZhangCalib
+CalibZhang(
+    const BatchSpacePoints &batchSpacePoints,
+    const BatchImagePoints &batchImagePoints,
+    const ImageShape &imageShape,
+    CamIntrinsicParams *initCamInParams)
 {
     /*OpenCV API*/
     // https://docs.opencv.org/4.7.0/d9/d0c/group__calib3d.html#ga687a1ab946686f0d85ae0363b5af1d7b
     // TermCliteriaクラス https://docs.opencv.org/4.7.0/d9/d5d/classcv_1_1TermCriteria.html
     // 魚眼はこっち. https://docs.opencv.org/4.7.0/db/d58/group__calib3d__fisheye.html
+    // 参考. https://kamino.hatenablog.com/entry/opencv_calibrate_camera
     // double cv::calibrateCamera(InputArrayOfArrays objectPoints,
     //                            InputArrayOfArrays imagePoints,
     //                            Size imageSize,
@@ -115,12 +72,18 @@ CalibZhang(const BatchImagePoints &batchImagePoints,
     //                            OutputArray perViewErrors,
     //                            int flags = 0,
     //                            TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON))
-    // ret : 各視点の再投影誤差の和
+    // ret : 各視点の再投影誤差の和 (単位:ピクセル)
+    // ||Ax-y||^2 : 再投影誤差のL2ノルム -> 最小化の非線形目的関数 -> LM法(勾配法と大体同じ) : バンドル調整
+    // 非線形最適化のため, 局所解に陥る事がある. そのため, 最適解を求めるガイドラインとして内部パラメータの初期値を与えると最適化されやすい.
+    // cv::calibrateCamera関数でも最初に初期解を推定して, この初期解(推定解)を用いてLM法で最適解を求める2段構えとなっている.
+    // 外部パラメータの初期解は, 同一平面上(キャリブレーションパターン面)にあるモデル座標から画像平面へのホモグラフィを考えることで求めている.
+    // 非平面のキャリブレーションパターンの場合, 外部パラメータの初期解をホモグラフィで求められないので, 内部パラメータの初期解を与えて, LM法を解いて,
+    // 一旦, 外部パラメータの初期解を求めて, 再度, 内部パラメータと外部パラメータを与えて, LM法で最終的な最適化を行っている.
 
     /**
      * @brief
-     * @note objectPoints : std::vector<std::vector<>>, 各点(x,y,z)はz=0.
-     * @note imagePoints : std::vector<std::vector<>>
+     * @note objectPoints : std::vector<std::vector<cv::Point3f>>に準ずる型, 各点(x,y,z)はz=0.
+     * @note imagePoints : std::vector<std::vector<cv::Point2f>>に準ずる型
      * @note imageSize : カメラの内部パラメータの初期化のみに使用する.
      * @note cameraMatrix : [CALIB_USE_INTRINSIC_GUESS|CALIB_FIX_ASPECT_RATIO|CALIB_FIX_PRINCIPAL_POINT|CALIB_FIX_FOCAL_LENGTH]
      *                      のどれかを指定すると, cameraMatrixの各パラメータ(fx,fy,cx,cy)の一部または全てを`cv::calibrateCamera`を呼ぶ前に
@@ -141,8 +104,8 @@ CalibZhang(const BatchImagePoints &batchImagePoints,
      *             Z軸正 : 視線方向
      *             Y軸正 : カメラの下方向(Y軸負がカメラ上方向)
      *             Y軸正 : 右方向
-     * 
-     * 
+     *
+     *
      *
      * [キャリブレーションの成果物]
      * 1. カメラの内部パラメータ (1セットのみ)
@@ -166,7 +129,7 @@ CalibZhang(const BatchImagePoints &batchImagePoints,
      *    (R_0, t_0, R_1, t_1, ..., R_M-1, t_M-1) Mは使用した画像の枚数.
      *    R_iは(1x3)の回転ベクトル.
      *    t_iは(1x3)の並進ベクトル.
-     * 
+     *
      * 6. 各視点毎の再投影誤差
      *    この数値が小さいほどキャリブレーションが成功している.
      */
@@ -235,6 +198,86 @@ CalibZhang(const BatchImagePoints &batchImagePoints,
      * @note 最適化にQR分解を使用する. Ax=y, min ||Ax-y||^2
      * @warning 行列係数Aがフルランクなら高速?
      *
-     *
      */
-}
+
+    // BatchImagePointsとBatchSpacePointsのサイズチェック
+    assert(batchSpacePoints.size() == batchImagePoints.size());
+    int batchNum = batchSpacePoints.size();
+    for (int i = 0; i < batchNum; ++i)
+    {
+        // 各視点画像内でSpacePointとImagePointは同じ数必要.
+        assert(batchSpacePoints[i].size() == batchImagePoints[i].size());
+    }
+
+    // LM法最適化フラグ
+    int optimFlags = 0;
+    optimFlags |= cv::CALIB_RATIONAL_MODEL;
+    optimFlags |= cv::CALIB_THIN_PRISM_MODEL;
+
+    cv::Mat inCamMat = cv::Mat::zeros(3, 3, CV_32FC1);
+
+    if (initCamInParams)
+    {
+        // 内部パラメータの初期値を使用する
+        optimFlags |= cv::CALIB_USE_INTRINSIC_GUESS;
+
+        // 内部パラメータの初期化
+        inCamMat.at<double>(0, 0) = initCamInParams->mForcasX;
+        inCamMat.at<double>(1, 1) = initCamInParams->mForcasY;
+        inCamMat.at<double>(2, 2) = 1.0;
+        inCamMat.at<double>(0, 2) = initCamInParams->mCenterX;
+        inCamMat.at<double>(1, 2) = initCamInParams->mCenterY;
+    }
+
+    /**
+     * @brief TermCriteria : 最適化の反復を終了する基準設定
+     * @note LM法の反復最適化条件(明らかに反復数が足りていない等のケースを除いてデフォルトのままでOK)
+     * @note cv::TermCriteria::Type::COUNT : 指定された回数(count) に到達したら繰り返し計算を終了する.
+     * @note cv::TermCriteria::Type::MAX_ITER : cv::TermCirteria::Type::COUNTと同じ.
+     * @note cv::TermCriteria::Type::EPS : 指定された制度(epsilon)に到達したら反復計算を終了する.
+     */
+
+    // cv::TermCriteria::Type type = cv::TermCriteria::Type::COUNT + cv::TermCriteria::EPS;
+    // int maxCount = 30;
+    // double epsilon = 0.001;
+    // cv::TermCriteria criteriaLM(type, maxCount, epsilon);
+    cv::TermCriteria criteriaLM(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, DBL_EPSILON);
+
+    cv::Mat distCoeffs;
+    std::vector<cv::Mat> rotVecs; // Rot vectors N*(1,3)
+    std::vector<cv::Mat> tranVecs; // Tran vectors N*(1,3)
+    cv::Mat stdDeviationsIntrinsics;
+    cv::Mat stdDeviationsExtrinsics;
+    cv::Mat perViewErrors;
+
+    double retAllRMS = cv::calibrateCamera(
+        batchSpacePoints,
+        batchImagePoints,
+        cv::Size(imageShape.mWidth, imageShape.mHeight),
+        inCamMat,
+        distCoeffs,
+        rotVecs,
+        tranVecs,
+        stdDeviationsIntrinsics,
+        stdDeviationsExtrinsics,
+        perViewErrors,
+        optimFlags,
+        criteriaLM
+    );
+
+    std::ostringstream oss;
+    oss << "[Input] " << batchNum << "'s images for calibration." << std::endl;
+
+    
+    oss << "[Output : RotVec and TranVec]" << std::endl;
+    for (int i = 0; i < batchNum; ++i)
+    {
+        oss << "[" << i << "th]" << std::endl;
+        oss << "RotVec: \n" << rotVecs.at(i) << std::endl;
+        oss << "TranVec: \n" << tranVecs.at(i) << std::endl;
+    }
+
+    oss << "[Output : ]"
+
+    return RetZhangCalib; // 仮
+} // CalibZhang
