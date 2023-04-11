@@ -14,23 +14,11 @@
 #include <iostream>
 #include <tuple>
 #include <utility>
+#include <vector>
+
 
 #include <cv3d_def.hpp>
 #include <cv3d_zhang_calib.hpp>
-
-// キャリブレーションパターンのグリッド数
-std::tuple<int,int> numGridTuple; std::get<0>(numGridTuple) = 0; std::get<1>(numGridTuple) = 0;
-std::string calibPattern;
-float gridSpan = 0.0; // [mm]
-#if (0)
-    calibPattern = "SquareGridPattern";
-    numGridTuple = std::make_pair(5, 7);
-#else
-    calibPattern = "CircleGridPattern";
-    numGridTuple = std::make_pair(3, 5);
-#endif
-
-
 
 auto main(int, char**) -> int
 {
@@ -39,10 +27,33 @@ auto main(int, char**) -> int
         /* code */
         std::cout << "Hello World" << std::endl;
 
-        /*キャリブレーションパターン画像の読み込み*/
-        std::string calibPatternDir = GetTestData("Calib3DPatterns");
-        std::cout << calibPatternDir << std::endl;
+        // キャリブレーションパターンのグリッド数
+        std::tuple<int, int> numGridTuple;
+        std::get<0>(numGridTuple) = 0;
+        std::get<1>(numGridTuple) = 0;
+        std::string calibPattern;
+        float gridSpan = 0.0; // [mm]
+#if (0)
+        calibPattern = "SquareGridPattern";
+        numGridTuple = std::make_pair(5, 7);
+#else
+        calibPattern = "CircleGridPattern";
+        numGridTuple = std::make_pair(3, 5);
+#endif
 
+        /*キャリブレーションパターン画像の読み込み*/
+        std::string calibPatternDir = GetTestData("Calib3DPatterns");     // Src
+        std::string resultCalibPatternDir = calibPatternDir + "/Result";  // Dst
+        
+
+        if (calibPattern == "CircleGridPattern")
+        {
+
+        }
+        else
+        {
+
+        }
 
         /*キャリブレーション準備*/
 
