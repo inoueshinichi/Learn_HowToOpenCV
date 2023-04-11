@@ -10,50 +10,52 @@
  */
 #pragma once
 
-#include <opencv4/opencv2/calib3d.hpp> // calibrateCamera
-#include <opencv4/opencv2/core/types.hpp> // TermCriteria
+#include <opencv2/calib3d.hpp> // calibrateCamera
+#include <opencv2/core/types.hpp> // TermCriteria
 
 #include <cv3d_def.hpp>
 
 #include <iostream>
 #include <sstream>
+#include <exception>
+#include <stdexcept>
 
 
 // ZhangCalibの戻り値
-struct RetZhangCalib
+struct ResultZhangCalib
 {
     CamIntrinsicParams mCamInParams;
     LenDistortParams mLenDisParams;
-    std::vector<RotVector> mRetRotations;
-    std::vector<Translation> mTranslations;
+    std::vector<RotVector> mRetRotVecs;
+    std::vector<TranVector> mRetTranVecs;
 
-    TransformViewMatrix3x4 GetTransformViewMatrix3x4(int index)
+    ProjectionMatrix3x4 GetProjectionMatrix3x4(int index)
     {
         assert(index >= 0);
-        assert(index < mRetRotVectors.size());
+        assert(index < mRetRotVecs.size());
 
-        TransformViewMatrix viewMat;
-
-        return viewMat;
+        ProjectionMatrix3x4 projMat;
+        return projMat;
     }
 
     CamExtrinsicMatrix3x4 GetExtrinsicMatrix3x4(int index)
     {
         assert(index >= 0);
-        assert(index < mRetRotVectors.size());
+        assert(index < mRetRotVecs.size());
 
-
+        CamExtrinsicMatrix3x4 exCamMat;
+        return exCamMat;
     }
 };
 
 
 /*キャリブレーション*/
-RetZhangCalib
+void
 CalibZhang(
     const BatchSpacePoints &batchSpacePoints,
     const BatchImagePoints &batchImagePoints,
     const ImageShape &imageShape,
-    CamIntrinsicParams *initCamInParams)
+    CamIntrinsicParams *initCamInParams = nullptr)
 {
     /*OpenCV API*/
     // https://docs.opencv.org/4.7.0/d9/d0c/group__calib3d.html#ga687a1ab946686f0d85ae0363b5af1d7b
@@ -214,6 +216,7 @@ CalibZhang(
     optimFlags |= cv::CALIB_RATIONAL_MODEL;
     optimFlags |= cv::CALIB_THIN_PRISM_MODEL;
 
+    // 内部パラメータの初期値
     cv::Mat inCamMat = cv::Mat::zeros(3, 3, CV_32FC1);
 
     if (initCamInParams)
@@ -222,11 +225,11 @@ CalibZhang(
         optimFlags |= cv::CALIB_USE_INTRINSIC_GUESS;
 
         // 内部パラメータの初期化
-        inCamMat.at<double>(0, 0) = initCamInParams->mForcasX;
-        inCamMat.at<double>(1, 1) = initCamInParams->mForcasY;
-        inCamMat.at<double>(2, 2) = 1.0;
-        inCamMat.at<double>(0, 2) = initCamInParams->mCenterX;
-        inCamMat.at<double>(1, 2) = initCamInParams->mCenterY;
+        inCamMat.at<float>(0, 0) = initCamInParams->mFx;
+        inCamMat.at<float>(1, 1) = initCamInParams->mFy;
+        inCamMat.at<float>(2, 2) = 1.0;
+        inCamMat.at<float>(0, 2) = initCamInParams->mCx;
+        inCamMat.at<float>(1, 2) = initCamInParams->mCy;
     }
 
     /**
@@ -243,13 +246,16 @@ CalibZhang(
     // cv::TermCriteria criteriaLM(type, maxCount, epsilon);
     cv::TermCriteria criteriaLM(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, DBL_EPSILON);
 
-    cv::Mat distCoeffs;
-    std::vector<cv::Mat> rotVecs; // Rot vectors N*(1,3)
-    std::vector<cv::Mat> tranVecs; // Tran vectors N*(1,3)
-    cv::Mat stdDeviationsIntrinsics;
-    cv::Mat stdDeviationsExtrinsics;
-    cv::Mat perViewErrors;
+    // InputArray, OutputArray, InputOutputArray, InputArrayOfArrays, OutputArrayOfArrays
+    // https://qiita.com/fukushima1981/items/d283b3af3e21d94550c4
+    std::vector<float> distCoeffs;            // 歪みパラメータ 
+    std::vector<cv::Vec3f> rotVecs;  // 回転ベクトル N*(1,3)
+    std::vector<cv::Vec3f> tranVecs; // 並進ベクトル N*(1,3)
+    std::vector<float> stdDeviationsIntrinsics; // 内部パラメータの標準偏差
+    std::vector<float> stdDeviationsExtrinsics; // 外部パラメータの標準偏差
+    std::vector<double> perViewErrors;
 
+    // Zhang
     double retAllRMS = cv::calibrateCamera(
         batchSpacePoints,
         batchImagePoints,
@@ -265,19 +271,106 @@ CalibZhang(
         criteriaLM
     );
 
-    std::ostringstream oss;
-    oss << "[Input] " << batchNum << "'s images for calibration." << std::endl;
-
-    
-    oss << "[Output : RotVec and TranVec]" << std::endl;
+    std::ostringstream ossInput;
+    ossInput << "[Input] " << batchNum << "'s images for calibration." << std::endl;
     for (int i = 0; i < batchNum; ++i)
     {
-        oss << "[" << i << "th]" << std::endl;
-        oss << "RotVec: \n" << rotVecs.at(i) << std::endl;
-        oss << "TranVec: \n" << tranVecs.at(i) << std::endl;
+        ossInput << "[" << i << "th] Point pairs of (Image, Space): " << batchImagePoints[i].size() << std::endl;
+    }
+    std::cout << ossInput.str() << std::endl;
+    std::cout << "-------------------------------------" << std::endl;
+
+    std::ostringstream ossOutput;
+    ossOutput << "[Output] Optimized RotVec and TranVec. Additional ProjErr" << std::endl;
+    for (int i = 0; i < batchNum; ++i)
+    {
+        ossOutput << "[" << i << "th]" << std::endl;
+        ossOutput << "RotVec: \n" << rotVecs.at(i) << std::endl;
+        ossOutput << "TranVec: \n" << tranVecs.at(i) << std::endl;
+        ossOutput << "ProjErr :" << perViewErrors.at(i) << std::endl;
     }
 
-    oss << "[Output : ]"
+    ossOutput << "[Output] Optimized Intrinsic Matrix" << std::endl;
+    ossOutput << inCamMat << std::endl;
 
-    return RetZhangCalib; // 仮
+    // 歪みパラメータ 4, 5, 8, 12 or 14要素
+    // distCoeffs: (k1,k2,p1,p2[,k3[,k4,k5,k6[,s1,s2,s3,s4[,tauX,tauY]]]])
+    float k1, k2, k3, k4, k5, k6, p1, p2, s1, s2, s3, s4, taux, tauy;
+    int distParamSize = distCoeffs.size();
+    ossOutput << "[Output] Distort Size: " << distParamSize << std::endl;
+    if (distParamSize >= 4)
+    {
+        k1 = distCoeffs.at(0);
+        k2 = distCoeffs.at(1);
+        p1 = distCoeffs.at(2);
+        p2 = distCoeffs.at(3);
+    }
+    if (distParamSize >= 5)
+    {
+        k3 = distCoeffs.at(4);
+    }
+    if (distParamSize >= 8)
+    {
+        k4 = distCoeffs.at(5);
+        k5 = distCoeffs.at(6);
+        k6 = distCoeffs.at(7);
+    }
+    if (distParamSize >= 12)
+    {
+        s1 = distCoeffs.at(8);
+        s2 = distCoeffs.at(9);
+        s3 = distCoeffs.at(10);
+        s4 = distCoeffs.at(11);
+    }
+    if (distParamSize >= 14)
+    {
+        taux = distCoeffs.at(12);
+        tauy = distCoeffs.at(13);
+    }
+
+    ossOutput << "[Output] Optimized Distortion Parameters" << std::endl;
+    ossOutput << "k1: " << k1 << std::endl;
+    ossOutput << "k2: " << k2 << std::endl;
+    ossOutput << "p1: " << p1 << std::endl;
+    ossOutput << "p2: " << p2 << std::endl;
+    ossOutput << "k3: " << k3 << std::endl;
+    ossOutput << "k4: " << k4 << std::endl;
+    ossOutput << "k5: " << k5 << std::endl;
+    ossOutput << "k6: " << k6 << std::endl;
+    ossOutput << "s1: " << s1 << std::endl;
+    ossOutput << "s2: " << s2 << std::endl;
+    ossOutput << "s3: " << s3 << std::endl;
+    ossOutput << "s4: " << s4 << std::endl;
+    ossOutput << "taux: " << taux << std::endl;
+    ossOutput << "tauy: " << tauy << std::endl;
+
+    ossOutput << "[Output] stdDeviationsIntrinsics" << std::endl;
+    ossOutput << "Std fx: " << stdDeviationsIntrinsics.at(0) << std::endl;
+    ossOutput << "Std fy: " << stdDeviationsIntrinsics.at(1) << std::endl;
+    ossOutput << "Std cx: " << stdDeviationsIntrinsics.at(2) << std::endl;
+    ossOutput << "Std cy: " << stdDeviationsIntrinsics.at(3) << std::endl;
+    ossOutput << "Std k1: " << stdDeviationsIntrinsics.at(4) << std::endl;
+    ossOutput << "Std k2: " << stdDeviationsIntrinsics.at(5) << std::endl;
+    ossOutput << "Std p1: " << stdDeviationsIntrinsics.at(6) << std::endl;
+    ossOutput << "Std p2: " << stdDeviationsIntrinsics.at(7) << std::endl;
+    ossOutput << "Std k3: " << stdDeviationsIntrinsics.at(8) << std::endl;
+    ossOutput << "Std k4: " << stdDeviationsIntrinsics.at(9) << std::endl;
+    ossOutput << "Std k5: " << stdDeviationsIntrinsics.at(10) << std::endl;
+    ossOutput << "Std k6: " << stdDeviationsIntrinsics.at(11) << std::endl;
+    ossOutput << "Std s1 " << stdDeviationsIntrinsics.at(12) << std::endl;
+    ossOutput << "Std s2 " << stdDeviationsIntrinsics.at(13) << std::endl;
+    ossOutput << "Std s3 " << stdDeviationsIntrinsics.at(14) << std::endl;
+    ossOutput << "Std s4 " << stdDeviationsIntrinsics.at(15) << std::endl;
+    ossOutput << "Std taux " << stdDeviationsIntrinsics.at(16) << std::endl;
+    ossOutput << "Std tauy " << stdDeviationsIntrinsics.at(17) << std::endl;
+
+    ossOutput << "[Output] stdDeviationsExtrinsics" << std::endl;
+    for (int i = 0; i < stdDeviationsExtrinsics.size(); ++i)
+    {
+        ossOutput << "[" << i << "'th]: Std rotvec " 
+            << stdDeviationsExtrinsics.at(i) << "Std tranvec " 
+            << stdDeviationsExtrinsics.at(i+1) << std::endl;
+    }
+    std::cout << ossOutput.str() << std::endl;
+
 } // CalibZhang

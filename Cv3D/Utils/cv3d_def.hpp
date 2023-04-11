@@ -13,6 +13,17 @@
 #include <cmath>
 #include <cstring>
 
+float RadianToDegrees(float radian)
+{
+    return (float)(180.0f * radian / M_PI);
+}
+
+float DegreesToRadian(float degrees)
+{
+    return (float)(M_PI * degrees / 180.0f);
+}
+
+
 // Vector2
 struct Vector2
 {
@@ -31,8 +42,7 @@ struct Vector2
     void Normalize()
     {
         float length = std::sqrtf(NormL2Sq());
-        if (!length)
-            return;
+        if (length == 0.0f || length == 1.0f) return;
         mX /= length;
         mY /= length;
     }
@@ -74,11 +84,36 @@ struct Scale : public Vector3
 };
 
 // 並進
-struct Translation : public Vector3
+struct TranVector : public Vector3
 {
-    Translation() {}
-    Translation(float tx, float ty, float tz) : Vector3(tx, ty, tz) {}
-    ~Translation() {}
+    TranVector() {}
+    TranVector(float tx, float ty, float tz) : Vector3(tx, ty, tz) {}
+    ~TranVector() {}
+};
+
+// 回転ベクトル
+struct RotVector : public Vector3
+{
+    RotVector() {}
+    RotVector(float rx, float ry, float rz) : Vector3(rx, ry, rz) {}
+    ~RotVector() {}
+
+    Vector3 GetDirection()
+    {
+        Vector3 direction(*this);
+        direction.Normalize();
+        return direction;
+    }
+
+    float GetAngleRadian()
+    {
+        return std::sqrtf(this->NormL2Sq());
+    }
+
+    float GetAngleDegrees()
+    {
+        return RadianToDegrees(this->GetAngleRadian());
+    }
 };
 
 
@@ -161,19 +196,20 @@ struct Rotation
 // カメラ内部パラメータ
 struct CamIntrinsicParams
 {
-    float mFx;
-    float mFy;
+    float mFx;   // f/pdx
+    float mFy;   // f/(pdy*sin(tilt))
     float mCx;   // 画像中心 X
     float mCy;   // 画像中心 Y
-    float mPlaneTilt; // 理想投影面に対する実際の投影面の傾き
-    float mSkew; // mTilePlane=0のとき, 0
+    float mTilt; // 理想投影面に対する実際の投影面の傾き
+    float mSkew; // fx/cos(tilt)
 
-    CamIntrinsicParams() : mFx(0.f), mFy(0.f), mCx(0.f), mCy(0.f), mPlaneTilt(0.f), mSkew(0.f) {}
-    CamIntrinsicParams(float fx, float fy, float cx, float cy, float planeTilt=0.f)
-        : mFx(fx), mFy(fy), mCx(cx), mCy(cy), mPlaneTilt(planeTilt), mSkew(mFx / std::cos(planeTilt))
+    CamIntrinsicParams() : mFx(0.f), mFy(0.f), mCx(0.f), mCy(0.f), mTilt(0.f), mSkew(0.f) {}
+    CamIntrinsicParams(float fx, float fy, float cx, float cy, float tilt = 0.f)
+        : mFx(fx), mFy(fy / std::sin(tilt)), mCx(cx), mCy(cy), mTilt(tilt), mSkew(mFx / std::cos(tilt))
     {}
+    CamIntrinsicParams(float f, float pdx, float pdy, float cx, float cy, float tilt = 0.f)
+        : mFx(f / pdx), mFy(f / (pdy * std::sin(tilt))), mCx(cx), mCy(cy), mTilt(tilt), mSkew(mFx / std::cos(tilt)) {}
     ~CamIntrinsicParams() {}
-
 
     Matrix3x3 GetMatrix3x3()
     {
@@ -198,25 +234,48 @@ struct CamIntrinsicParams
 // (k1,k2,p1,p2[,k3[,k4,k5,k6[,s1,s2,s3,s4[,tauX,tauY]]]]). 4, 5, 8, 12 or 14要素
 struct LenDistortParams
 {
-    std::unordered_map<std::string, float> distortDict;
+    std::unordered_map<std::string, float> distDict;
 
     LenDistortParams()
     {
-        distortDict.insert( {"K1", 0.0f} );
-        distortDict.insert( {"K2", 0.0f} );
-        distortDict.insert( {"P1", 0.0f} );
-        distortDict.insert( {"P2", 0.0f} );
-        distortDict.insert( {"K3", 0.0f} );
-        distortDict.insert( {"K4", 0.0f} );
-        distortDict.insert( {"K5", 0.0f} );
-        distortDict.insert( {"K6", 0.0f} );
-        distortDict.insert( {"S1", 0.0f} );
-        distortDict.insert( {"S2", 0.0f} );
-        distortDict.insert( {"S3", 0.0f} );
-        distortDict.insert( {"S4", 0.0f} );
-        distortDict.insert( {"TauX", 0.0f} );
-        distortDict.insert( {"TauY", 0.0f} );
+        distDict.insert( {"k1", 0.0f} );
+        distDict.insert( {"k2", 0.0f} );
+        distDict.insert( {"p1", 0.0f} );
+        distDict.insert( {"p2", 0.0f} );
+        distDict.insert( {"k3", 0.0f} );
+        distDict.insert( {"k4", 0.0f} );
+        distDict.insert( {"k5", 0.0f} );
+        distDict.insert( {"k6", 0.0f} );
+        distDict.insert( {"s1", 0.0f} );
+        distDict.insert( {"s2", 0.0f} );
+        distDict.insert( {"s3", 0.0f} );
+        distDict.insert( {"s4", 0.0f} );
+        distDict.insert( {"taux", 0.0f} );
+        distDict.insert( {"tauy", 0.0f} );
     }
+    ~LenDistortParams() {}
+
+    // std::vector<float> GetParamVector()
+    // {
+    //     std::vector<float> params;
+    //     params.reserve(distDict.size());
+    //     params.resize(distDict.size());
+    //     params.push_back(distDict["k1"]);
+    //     params.push_back(distDict["k2"]);
+    //     params.push_back(distDict["p1"]);
+    //     params.push_back(distDict["p2"]);
+    //     params.push_back(distDict["k3"]);
+    //     params.push_back(distDict["k4"]);
+    //     params.push_back(distDict["k5"]);
+    //     params.push_back(distDict["k6"]);
+    //     params.push_back(distDict["s1"]);
+    //     params.push_back(distDict["s2"]);
+    //     params.push_back(distDict["s3"]);
+    //     params.push_back(distDict["s4"]);
+    //     params.push_back(distDict["taux"]);
+    //     params.push_back(distDict["tauy"]);
+    //     return params;
+    // }
 };
 
 // カメラ外部パラメータ
@@ -280,9 +339,9 @@ struct CamExtrinsicMatrix3x4
         return Rotation(xVec, yVec, zVec);
     }
 
-    Translation GetTranslation()
+    TranVector GetTranslation()
     {
-        return Translation(mTx, mTy, mTz);
+        return TranVector(mTx, mTy, mTz);
     }
 };
 
@@ -294,19 +353,24 @@ struct ImageShape
     int mWidth;
 };
 
-// Image Point
-struct ImagePoint : public Vector2
-{
-    ImagePoint(float x, float y) : Vector2(x, y) {}
-    ~ImagePoint() {}
-};
+#include <opencv2/core.hpp>
 
-// Space Point
-struct SpacePoint : public Vector3
-{
-    SpacePoint(float x, float y, float z) : Vector3(x, y, z) {}
-    ~SpacePoint() {}
-};
+// // Image Point
+// struct ImagePoint : public cv::Vec2f
+// {
+//     ImagePoint(float x, float y) : cv::Vec2f(x, y) {}
+//     ~ImagePoint() {}
+// };
+
+// // Space Point
+// struct SpacePoint : public cv::Vec3f
+// {
+//     SpacePoint(float x, float y, float z) : cv::Vec3f(x, y, z) {}
+//     ~SpacePoint() {}
+// };
+
+using ImagePoint = cv::Vec2f;
+using SpacePoint = cv::Vec3f;
 
 #include <vector>
 
@@ -395,9 +459,9 @@ struct ProjectionMatrix3x4
         {
             S = u = v = 0.f;
             float x, y, z;
-            x = spacePoints[i].mX;
-            y = spacePoints[i].mY;
-            z = spacePoints[i].mZ;
+            x = spacePoints[i][0]; // x
+            y = spacePoints[i][1]; // y
+            z = spacePoints[i][2]; // z
             S = mP31 * x + mP32 * y + mP33 * z + mP34;
             u = mP11 * x + mP12 * y + mP13 * z + mP14;
             v = mP21 * x + mP22 * y + mP23 * z + mP24;
