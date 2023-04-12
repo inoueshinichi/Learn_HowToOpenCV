@@ -27,7 +27,7 @@ auto main(int, char**) -> int
     try
     {
         std::string pattern = GetTestData("*.jpg");
-        auto pathList = is::common::GetGlobPaths(pattern);
+        auto pathList = is::common::glob_paths(pattern);
         std::ostringstream oss;
         oss << "[PathList]\n";
         for (const auto& path : pathList)
@@ -36,7 +36,7 @@ auto main(int, char**) -> int
         }
         
         pattern = GetTestData("*.png");
-        pathList = is::common::GetGlobPaths(pattern);
+        pathList = is::common::glob_paths(pattern);
         oss << "[PathList]\n";
         for (const auto &path : pathList)
         {

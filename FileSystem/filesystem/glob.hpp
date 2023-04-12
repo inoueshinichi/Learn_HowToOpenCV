@@ -40,8 +40,8 @@ namespace is
             //          glob_t *pglob);
             //
             // void globfree(glob_t *pglob);
-            std::vector<std::string>
-            GetGlobPaths(const std::string &filePathPattern)
+            inline std::vector<std::string>
+            __glob_paths(const std::string &filePathPattern)
             {
                 std::vector<std::string> pathList;
                 glob_t globbuf;
@@ -68,10 +68,10 @@ namespace is
 #endif
         } // detail
 
-        std::vector<std::string> 
-        GetGlobPaths(const std::string &filePathPattern)
+        inline std::vector<std::string>
+        glob_paths(const std::string &filePathPattern)
         {
-            return detail::GetGlobPaths(filePathPattern);
+            return detail::__glob_paths(filePathPattern);
         }
     }
 }

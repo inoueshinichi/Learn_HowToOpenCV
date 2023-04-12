@@ -21,7 +21,9 @@ namespace is
         namespace detail
         {
 #if defined(_WIN32) || defined(_WIN64)
-            std::shared_ptr<FILE> fopen(const std::string& filename, const std::string& mode, bool utf8)
+
+            inline std::shared_ptr<FILE> 
+            __fopen(const std::string& filename, const std::string& mode, bool utf8)
             {
                 auto deleter = [](FILE* fp) { if (fp) fclose(fp); };
                 FILE* fp;
@@ -75,9 +77,10 @@ namespace is
                 return sfp;
             }
 
-
 #elif defined(__linux__) || defined(__MACH__)
-            std::shared_ptr<FILE> fopen(const std::string& filename, const std::string& mode, bool utf8)
+
+            inline std::shared_ptr<FILE> 
+            __fopen(const std::string& filename, const std::string& mode, bool utf8)
             {
                 auto deleter = [](FILE* fp) { if (fp) fclose(fp); };
                 FILE* fp;
@@ -122,9 +125,10 @@ namespace is
 #endif
         }
 
-        std::shared_ptr<FILE> fopen(const std::string& filename, const std::string& mode, bool utf8 = true)
+        inline std::shared_ptr<FILE> 
+        fopen(const std::string& filename, const std::string& mode, bool utf8 = true)
         {
-            return detail::fopen(filename, mode, utf8);
+            return detail::__fopen(filename, mode, utf8);
         }
     }
 }
