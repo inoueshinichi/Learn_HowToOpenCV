@@ -37,7 +37,7 @@ namespace is
             __rmdir(const std::string& dirname)
             {
                 bool ret = false;
-                int stat = rmdir(dirname.c_str());
+                int stat = ::rmdir(dirname.c_str());
                 if (stat == 0)
                 {
                     ret = true;

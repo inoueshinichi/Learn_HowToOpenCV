@@ -12,6 +12,8 @@
 
 // Distinguish OS Platform
 #if defined(_WIN32) || defined(_WIN64)
+#define NOMINMAX
+#include <windows.h>
 #include <fcntl.h> // open
 #include <io.h> // open
 #include <sys/stat.h> // open, __stat64, _stat64

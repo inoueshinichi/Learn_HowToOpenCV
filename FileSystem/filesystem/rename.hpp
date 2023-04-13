@@ -25,7 +25,7 @@ namespace is
             __rename(const std::string& oldname, const std::string& newname)
             {
                 bool ret = false;
-                int stat = rename(oldname.c_str(), newname.c_str());
+                int stat = ::rename(oldname.c_str(), newname.c_str());
                 if (stat == 0) // newnameと重複するファイル名, ディレクトリ名が存在する場合失敗する.
                 {
                     ret = true;
@@ -45,7 +45,7 @@ namespace is
                     return false;
                 }
                 bool ret = false;
-                int stat = rename(oldname.c_str(), newname.c_str());
+                int stat = ::rename(oldname.c_str(), newname.c_str());
                 if (stat == 0)
                 {
                     ret = true;

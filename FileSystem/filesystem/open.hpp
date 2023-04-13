@@ -104,11 +104,11 @@ namespace is
                 // 新規作成ファイルに対するアクセス権限
                 pmode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH; // chomodと同じ
 
-                fd = open(filename.c_str(), option, pmode);
+                fd = ::open(filename.c_str(), option, pmode);
 
                 if (fd != -1)
                 {
-                    fp = fdopen(fd, mode.c_str());
+                    fp = ::fdopen(fd, mode.c_str());
                     if (!fp)
                     {
                         sfp.reset(fp);

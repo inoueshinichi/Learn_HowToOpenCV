@@ -43,7 +43,7 @@ namespace is
                 /*アクセス権*/
                 // 所有者は読み書き実行可能, 所有者以外は, アクセス不可とする.
                 mode = S_IRUSR | S_IWUSR | S_IXUSR;
-                if (mkdir(dirname.c_str(), mode) == 0)
+                if (::mkdir(dirname.c_str(), mode) == 0)
                 {
                     ret = true;
                 }

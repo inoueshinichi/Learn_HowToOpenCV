@@ -10,6 +10,7 @@
  */
 #pragma once
 #include <filesystem.hpp>
+#include <transform_char.hpp>
 
 #include <string>
 
@@ -45,15 +46,36 @@ namespace is
         {
 #if defined(_WIN32) || defined(_WIN64)
             inline bool
-            __status(const std::string &entryname, EntryStatus &entrystatus)
+            __status(const std::string &entryname, EntryStatus &entrystatus, bool slink)
             {
+                std::memset(&entrystatus, 0, sizeof(EntryStatus));
                 bool ret = false;
                 struct __stat64 stat;
-                if (_stat64(entryname.c_str(), &stat) == 0)
+
+                if (slink)
                 {
+                    if (_stat64(entryname.c_str(), &stat) == 0)
+                    {
+                        /*ここでエントリーの情報を取得*/
+                        ret = true;
+                    }
+                }
+                else
+                {
+                    /**
+                     * @brief WIN32APIを使用する
+                     * @note https://learn.microsoft.com/ja-jp/windows/win32/api/fileapi/nf-fileapi-getfileattributesa
+                     * @note https://learn.microsoft.com/ja-jp/windows/win32/api/fileapi/nf-fileapi-getfileattributesw
+                     * @note https://learn.microsoft.com/ja-jp/windows/win32/fileio/file-attribute-constants
+                     * @warning ANSIバージョンでは、名前は`MAX_PATH`文字に制限されている.
+                     */
+                    std::wstring entrynameL = is::common::cvt_shiftjis_to_utf16(entryname);
+                    DWORD file_attributes = GetFileAttributesW(entrynameL.c_str());
+
                     /*ここでエントリーの情報を取得*/
                     ret = true;
                 }
+                
                 return ret;
             }
 
@@ -61,7 +83,7 @@ namespace is
             __is_dir(const std::string &entryname)
             {
                 EntryStatus status;
-                bool ret = is::common::detail::__status(entryname, status, true);
+                bool ret = detail::__status(entryname, status, true);
                 if (!ret)
                     return false;
                 if ((status.st_mode & _S_IFMT) == _S_IFDIR)
@@ -74,7 +96,7 @@ namespace is
             __is_file(const std::string &entryname)
             {
                 EntryStatus status;
-                bool ret = is::common::detail::__status(entryname, status, true);
+                bool ret = detail::__status(entryname, status, true);
                 if (!ret)
                     return false;
                 if ((status.st_mode & _S_IFMT) == _S_IFREG)
@@ -87,7 +109,7 @@ namespace is
             __is_slink(const std::string &entryname)
             {
                 EntryStatus status;
-                bool ret = is::common::detail::__status(entryname, status, true);
+                bool ret = detail::__status(entryname, status, true);
                 if (!ret)
                     return false;
                 if ((status.st_mode & _S_IFMT) == _S_IFLNK)
@@ -98,18 +120,20 @@ namespace is
 
 #elif defined(__MACH__)
             inline bool
-            __status(const std::string &entryname, EntryStatus &entrystatus, bool symlink)
+            __status(const std::string &entryname, EntryStatus &entrystatus, bool slink)
             {
+                std::memset(&entrystatus, 0, sizeof(EntryStatus));
                 bool ret = false;
                 struct stat64 stat;
                 int stat_ret = 0;
-                if (symlink)
+                if (slink)
                 {
                     // シンボリックリンクを辿る
                     stat_ret = stat64(entryname.c_str(), &stat);
                 }
                 else
                 {
+                    // シンボリックリンクを辿らない. シンボリックリンク自体のファイル情報を取得する.
                     stat_ret = lstat64(entryname.c_str(), &stat);
                 }
 
@@ -166,17 +190,18 @@ namespace is
 
 #elif defined(__linux__)
             inline bool
-            __status(const std::string &entryname, EntryStatus &entrystatus, bool symlink)
+            __status(const std::string &entryname, EntryStatus &entrystatus, bool slink)
             {
                 bool ret = false;
                 struct stat64 stat;
-                if (symlink)
+                if (slink)
                 {
                     // シンボリックリンクを辿る
                     stat_ret = stat64(entryname.c_str(), &stat);
                 }
                 else
                 {
+                    // シンボリックリンクを辿らない. シンボリックリンク自体のファイル情報を取得する.
                     stat_ret = lstat64(entryname.c_str(), &stat);
                 }
 
@@ -195,17 +220,16 @@ namespace is
         }
 
         inline bool
-        status(const std::string &entryname, EntryStatus &entrystatus, bool symlink = true)
+        status(const std::string &entryname, EntryStatus &entrystatus, bool slink = true)
         {
-            std::memset(&entrystatus, 0, sizeof(EntryStatus));
-            return detail::__status(entryname, entrystatus, symlink);
+            return detail::__status(entryname, entrystatus, slink);
         }
 
         inline bool
         is_exist(const std::string &entryname)
         {
             EntryStatus status;
-            return is::common::status(entryname.c_str(), status);
+            return detail::__status(entryname.c_str(), status, true);
         }
 
         inline bool
