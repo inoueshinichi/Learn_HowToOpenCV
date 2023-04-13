@@ -45,7 +45,7 @@ int main(int argc, char **argv)
             time_start = cv::getTickCount();
 
             // Query : currentFrame
-            // Traned : lastFrame
+            // Trained : lastFrame
 
             // BGR -> Gray
             cv::cvtColor(curFrame, img_gray, cv::COLOR_BGR2GRAY);
