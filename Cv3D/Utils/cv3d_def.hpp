@@ -369,8 +369,8 @@ struct ImageShape
 //     ~SpacePoint() {}
 // };
 
-using ImagePoint = cv::Vec2f;
-using SpacePoint = cv::Vec3f;
+using ImagePoint = cv::Point2f;
+using SpacePoint = cv::Point3f;
 
 #include <vector>
 
@@ -459,9 +459,9 @@ struct ProjectionMatrix3x4
         {
             S = u = v = 0.f;
             float x, y, z;
-            x = spacePoints[i][0]; // x
-            y = spacePoints[i][1]; // y
-            z = spacePoints[i][2]; // z
+            x = spacePoints[i].x; // x
+            y = spacePoints[i].y; // y
+            z = spacePoints[i].z; // z
             S = mP31 * x + mP32 * y + mP33 * z + mP34;
             u = mP11 * x + mP12 * y + mP13 * z + mP14;
             v = mP21 * x + mP22 * y + mP23 * z + mP24;
