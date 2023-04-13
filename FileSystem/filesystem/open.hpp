@@ -75,7 +75,7 @@ namespace is
                     option |= _O_TEXT;
                 }
 
-                if (utf8)
+                if (utf8 && ((option & _O_TEXT) == 1))
                 {
                     option |= _U_U8TEXT;
                 }
@@ -105,11 +105,10 @@ namespace is
 
             inline std::shared_ptr<FILE> 
             __fopen(const std::string& filename, const std::string& mode, bool utf8)
-            {
-                auto deleter = [](FILE* fp) { if (fp) fclose(fp); };
-                FILE* fp;
-                std::shared_ptr<FILE> sfp(nullptr, deleter);
+            {   
+                FILE* fp;   
                 int fd, option, pmode;
+                fd = option = pmode = 0;
 
                 // modeの解析
                 if (mode.find("r") != std::string::npos)
@@ -119,30 +118,31 @@ namespace is
                 if (mode.find("w") != std::string::npos)
                 {
                     option |= O_CREAT | O_TRUNC | O_WRONLY;
+
+                    // 新規作成ファイルに対するアクセス権限
+                    pmode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH; // chomodと同じ
                 }
                 if (mode.find("a") != std::string::npos)
                 {
                     option |= O_APPEND;
                 }
                 
-                // 新規作成ファイルに対するアクセス権限
-                pmode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH; // chomodと同じ
-
                 fd = ::open(filename.c_str(), option, pmode);
 
                 if (fd != -1)
                 {
                     fp = ::fdopen(fd, mode.c_str());
-                    if (!fp)
+                    if (fp != nullptr)
                     {
-                        sfp.reset(fp);
+                        auto deleter = [](FILE *fp) { if (fp) { fclose(fp); } };
+                        return std::shared_ptr<FILE>(fp, deleter);
                     }
                     else
                     {
                         close(fd);
                     }
                 }
-                return sfp;
+                return std::shared_ptr<FILE>(nullptr);
             }
 #else
 #error "Not match platform"
