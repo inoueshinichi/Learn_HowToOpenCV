@@ -9,7 +9,7 @@
  * 
  */
 #pragma once
-#include <filesystem.hpp>
+#include <common.hpp>
 #include <attributes.hpp>
 
 #include <string>
@@ -56,7 +56,7 @@ namespace is
             {
                 // macOS, Linux(Ubuntu)ではデフォルトで上書き設定なので, 
                 // newnameが既に存在する場合, 失敗とする.
-                bool stat_ret = is_exist(newname);
+                bool stat_ret = isexist(newname);
                 if (stat_ret)
                 {
                     return false;

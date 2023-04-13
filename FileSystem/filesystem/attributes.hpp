@@ -9,7 +9,7 @@
  *
  */
 #pragma once
-#include <filesystem.hpp>
+#include <common.hpp>
 #include <transform_char.hpp>
 
 #include <string>
@@ -103,7 +103,7 @@ namespace is
             }
 
             inline bool
-            __is_dir(const std::string &entryname)
+            __isdir(const std::string &entryname)
             {
                 EntryStatus status;
                 bool ret = detail::__status(entryname, status, true);
@@ -116,7 +116,7 @@ namespace is
             }
 
             inline bool
-            __is_file(const std::string &entryname)
+            __isfile(const std::string &entryname)
             {
                 EntryStatus status;
                 bool ret = detail::__status(entryname, status, true);
@@ -129,7 +129,7 @@ namespace is
             }
 
             inline bool
-            __is_slink(const std::string &entryname)
+            __isslink(const std::string &entryname)
             {
                 EntryStatus status;
                 bool ret = detail::__status(entryname, status, true);
@@ -187,7 +187,7 @@ namespace is
             }
 
             inline bool
-            __is_dir(const std::string &entryname)
+            __isdir(const std::string &entryname)
             {
                 EntryStatus status;
                 bool ret = is::common::detail::__status(entryname, status, true);
@@ -200,7 +200,7 @@ namespace is
             }
 
             inline bool
-            __is_file(const std::string &entryname)
+            __isfile(const std::string &entryname)
             {
                 EntryStatus status;
                 bool ret = is::common::detail::__status(entryname, status, true);
@@ -213,7 +213,7 @@ namespace is
             }
 
             inline bool
-            __is_slink(const std::string &entryname)
+            __isslink(const std::string &entryname)
             {
                 EntryStatus status;
                 bool ret = is::common::detail::__status(entryname, status, true);
@@ -263,28 +263,28 @@ namespace is
         }
 
         inline bool
-        is_exist(const std::string &entryname)
+        isexist(const std::string &entryname)
         {
             EntryStatus status;
             return detail::__status(entryname.c_str(), status, true);
         }
 
         inline bool
-        is_dir(const std::string &entryname)
+        isdir(const std::string &entryname)
         {
-            return detail::__is_dir(entryname);
+            return detail::__isdir(entryname);
         }
 
         inline bool
-        is_file(const std::string &entryname)
+        isfile(const std::string &entryname)
         {
-            return detail::__is_file(entryname);
+            return detail::__isfile(entryname);
         }
 
         inline bool
-        is_slink(const std::string &entryname)
+        isslink(const std::string &entryname)
         {
-            return detail::__is_slink(entryname);
+            return detail::__isslink(entryname);
         }
     }
 }

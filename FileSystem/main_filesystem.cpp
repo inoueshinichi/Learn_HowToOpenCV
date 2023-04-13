@@ -10,7 +10,6 @@
  */
 #include <test_utils.hpp>
 
-#include <filesystem.hpp>
 #include <glob.hpp>
 #include <mkdir.hpp>
 #include <rmdir.hpp>
@@ -109,10 +108,10 @@ auto main(int, char**) -> int
             }
         }
 
-        // is_exist
+        // isexist
         {
             std::string name = GetTestData("HelloWorld.txt");
-            if (is::common::is_exist(name))
+            if (is::common::isexist(name))
             {
                 std::cout << "Exist " << name << std::endl;
             }
@@ -122,10 +121,10 @@ auto main(int, char**) -> int
             }
         }
 
-        // is_dir
+        // isdir
         {
             std::string dirname = GetTestData("Calib3DPatterns");
-            if (is::common::is_dir(dirname))
+            if (is::common::isdir(dirname))
             {
                 std::cout << "Directory " << dirname << std::endl;
             }
@@ -135,7 +134,7 @@ auto main(int, char**) -> int
             }
 
             std::string name = GetTestData("HelloWorld.txt");
-            if (is::common::is_dir(name))
+            if (is::common::isdir(name))
             {
                 std::cout << "Directory " << name << std::endl;
             }
@@ -145,10 +144,10 @@ auto main(int, char**) -> int
             }
         }
 
-        // is_file
+        // isfile
         {
             std::string dirname = GetTestData("Calib3DPatterns");
-            if (is::common::is_file(dirname))
+            if (is::common::isfile(dirname))
             {
                 std::cout << "File " << dirname << std::endl;
             }
@@ -158,7 +157,7 @@ auto main(int, char**) -> int
             }
 
             std::string name = GetTestData("HelloWorld.txt");
-            if (is::common::is_file(name))
+            if (is::common::isfile(name))
             {
                 std::cout << "File " << name << std::endl;
             }
