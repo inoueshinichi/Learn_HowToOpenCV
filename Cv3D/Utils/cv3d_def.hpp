@@ -472,3 +472,31 @@ struct ProjectionMatrix3x4
         return imgPts;
     }
 };
+
+
+/*キャリブレーション結果*/
+struct ResultCalibration
+{
+    CamIntrinsicParams mCamInParams;
+    LenDistortParams mLenDisParams;
+    std::vector<RotVector> mRetRotVecs;
+    std::vector<TranVector> mRetTranVecs;
+
+    ProjectionMatrix3x4 GetProjectionMatrix3x4(int index)
+    {
+        assert(index >= 0);
+        assert(index < mRetRotVecs.size());
+
+        ProjectionMatrix3x4 projMat;
+        return projMat;
+    }
+
+    CamExtrinsicMatrix3x4 GetExtrinsicMatrix3x4(int index)
+    {
+        assert(index >= 0);
+        assert(index < mRetRotVecs.size());
+
+        CamExtrinsicMatrix3x4 exCamMat;
+        return exCamMat;
+    }
+};

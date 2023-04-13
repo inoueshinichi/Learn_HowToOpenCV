@@ -5,6 +5,9 @@
  * @version 0.1
  * @date 2023-04-11
  *
+ * @note キャリブレーションパターン作成サイト
+ * @note https://markhedleyjones.com/projects/calibration-checkerboard-collection
+ *
  * @copyright Copyright (c) 2023
  *
  */
