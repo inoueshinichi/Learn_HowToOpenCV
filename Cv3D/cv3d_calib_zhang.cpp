@@ -13,16 +13,15 @@
  */
 #include <test_utils.hpp>
 #include <opencv2/opencv.hpp>
+#include <cv3d_def.hpp>
+#include <cv3d_zhang_calib.hpp>
+#include <filesystem.hpp>
+
 #include <string>
 #include <iostream>
 #include <tuple>
 #include <utility>
 #include <vector>
-
-#include <cv3d_def.hpp>
-#include <cv3d_zhang_calib.hpp>
-
-#include <filesystem.hpp>
 
 // #define CIRCLE_GRID
 constexpr float GRID_SPAN = 10.0; // [mm]
@@ -118,10 +117,6 @@ auto main(int, char **) -> int
         /*キャリブレーション準備*/
         std::string calibPatternDir = GetTestData("Calib3DPatterns");    // Src
         std::string resultCalibPatternDir = calibPatternDir + "/Result"; // Dst
-        if (!is::common::isexist(resultCalibPatternDir))
-        {
-            is::common::mkdir(resultCalibPatternDir);
-        }
         std::string srcImgDir = calibPatternDir + "/" + Grid::sCalibPatternName;
         auto imgPathList = is::common::glob_paths(srcImgDir + "/*.bmp");
         std::cout << "[Pattern paths]: \n";

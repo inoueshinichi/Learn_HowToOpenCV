@@ -12,7 +12,7 @@ set(BUILD_SOURCES "")
 # Zhang calibration
 ###################
 set(BUILD_TARGET OCV_CALIB_ZHANG)
-make_test_case_opencv(${BUILD_TARGET} ./cv3d_main_calib_zhang.cpp)
+make_test_case_opencv(${BUILD_TARGET} ./cv3d_calib_zhang.cpp)
 
 target_include_directories(${BUILD_TARGET} PRIVATE
     ./Utils
@@ -52,7 +52,7 @@ target_sources(${BUILD_TARGET} PRIVATE
 #######################
 # Find Fundation Matrix
 #######################
-
+make_test_case_opencv(OCV_FIND_F_MAT_FROM_STREAM ./cv3d_find_f_mat_from_stream.cpp)
 
 #######################
 # Find Essential Matrix
