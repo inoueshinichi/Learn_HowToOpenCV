@@ -26,29 +26,38 @@ auto main(int, char**) -> int
 {
     try
     {
-        std::string pattern = GetTestData("*.jpg");
-        auto pathList = is::common::glob_paths(pattern);
-        std::ostringstream oss;
-        oss << "[PathList]\n";
-        for (const auto& path : pathList)
+        // glob
         {
-            oss << path << std::endl;
+            std::string pattern = GetTestData("*.jpg");
+            auto pathList = is::common::glob_paths(pattern);
+            std::ostringstream oss;
+            oss << "[PathList]\n";
+            for (const auto &path : pathList)
+            {
+                oss << path << std::endl;
+            }
+
+            pattern = GetTestData("*.png");
+            pathList = is::common::glob_paths(pattern);
+            oss << "[PathList]\n";
+            for (const auto &path : pathList)
+            {
+                oss << path << std::endl;
+            }
+            std::cout << oss.str() << std::endl;
+
+            auto sfp = is::common::fopen(GetTestData("HelloWorld.txt"), "r");
+            if (sfp)
+            {
+                std::cout << "Open " << GetTestData("HelloWorld.txt") << std::endl;
+            }
+        }
+
+        // mkdir
+        {
+            std::string 
         }
         
-        pattern = GetTestData("*.png");
-        pathList = is::common::glob_paths(pattern);
-        oss << "[PathList]\n";
-        for (const auto &path : pathList)
-        {
-            oss << path << std::endl;
-        }
-        std::cout << oss.str() << std::endl;
-
-        auto sfp = is::common::fopen(GetTestData("HelloWorld.txt"), "r");
-        if (sfp)
-        {
-            std::cout << "Open " << GetTestData("HelloWorld.txt") << std::endl;
-        }
     }
     catch(const std::exception& e)
     {

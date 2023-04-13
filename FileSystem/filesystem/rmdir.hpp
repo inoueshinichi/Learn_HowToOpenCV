@@ -20,8 +20,23 @@ namespace is
         namespace detail
         {
 #if defined(_WIN32) || defined(_WIN64)
+
+#if defined(_UNICODE) || defined(UNICODE)
+            inline bool
+            __rmdir(const std::string &dirname)
+            {
+                bool ret = false;
+                std::wstring dirnameL = is::common::cvt_shiftjis_to_utf16(dirname);
+                int stat = _wrmdir(dirnameL.c_str());
+                if (stat == 0)
+                {
+                    ret = true;
+                }
+                return ret;
+            }
+#else
             inline bool 
-            __rmdir(const std::string& dirname)
+            __rmdir(const std::string &dirname)
             {
                 bool ret = false;
                 int stat = _rmdir(dirname.c_str());
@@ -31,10 +46,11 @@ namespace is
                 }
                 return ret;
             }
+#endif
 
 #elif defined(__linux__) || defined(__MACH__)
             inline bool 
-            __rmdir(const std::string& dirname)
+            __rmdir(const std::string &dirname)
             {
                 bool ret = false;
                 int stat = ::rmdir(dirname.c_str());

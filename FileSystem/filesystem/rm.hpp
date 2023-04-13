@@ -17,16 +17,55 @@ namespace is
 {
     namespace common
     {
-        inline bool 
-        rm(const std::string& filename)
+        namespace detail
         {
-            bool ret = false;
-            int stat = remove(filename.c_str());
-            if (stat == 0)
+#if defined(_WIN32) || defined(_WIN64)
+    #if defined(_UNICODE) || defined(UNICODE)
+            inline bool
+            __rm(const std::string &filename)
             {
-                ret = true;
+                bool ret = false;
+                std::wstring filenameL = is::common::cvt_shiftjis_to_utf16(filename);
+                int stat = _wremove(filenameL.c_str());
+                if (stat == 0)
+                {
+                    ret = true;
+                }
+                return ret;
             }
-            return ret;
+    #else
+            inline bool
+            __rm(const std::string &filename)
+            {
+                bool ret = false;
+                int stat = ::remove(filename.c_str());
+                if (stat == 0)
+                {
+                    ret = true;
+                }
+                return ret;
+            }
+    #endif
+#else
+            inline bool
+            __rm(const std::string &filename)
+            {
+                bool ret = false;
+                int stat = ::remove(filename.c_str());
+                if (stat == 0)
+                {
+                    ret = true;
+                }
+                return ret;
+            }
+#endif
         }
+
+        inline bool
+        rm(const std::string &filename)
+        {
+            return detail::__rm(filename);
+        }
+        
     }
 }

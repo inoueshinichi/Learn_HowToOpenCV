@@ -21,8 +21,24 @@ namespace is
         namespace detail
         {
 #if defined(_WIN32) || defined(_WIN64)
+
+#if defined(_UNICODE) || defined(UNICODE)
             inline bool
-            __rename(const std::string& oldname, const std::string& newname)
+            __rename(const std::string &oldname, const std::string &newname)
+            {
+                bool ret = false;
+                std::wstring oldnameL = is::common::cvt_shiftjis_to_utf16(oldname);
+                std::wstring newnameL = is::common::cvt_shiftjis_to_utf16(newname);
+                int stat = _wrename(oldnameL.c_str(), newnameL.c_str());
+                if (stat == 0) // newnameと重複するファイル名, ディレクトリ名が存在する場合失敗する.
+                {
+                    ret = true;
+                }
+                return ret;
+            }
+#else
+            inline bool
+            __rename(const std::string &oldname, const std::string &newname)
             {
                 bool ret = false;
                 int stat = ::rename(oldname.c_str(), newname.c_str());
@@ -32,6 +48,7 @@ namespace is
                 }
                 return ret;
             }
+#endif
 
 #elif defined(__linux__) || defined(__MACH__)
             inline bool

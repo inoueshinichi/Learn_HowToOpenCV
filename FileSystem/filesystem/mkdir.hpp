@@ -21,6 +21,20 @@ namespace is
         {
 #if defined(_WIN32) || defined(_WIN64)
 
+#if defined(_UNICODE) || defined(UNICODE)
+            inline bool
+            __mkdir(const std::string& dirname)
+            {
+                bool ret = false;
+                std::wstring dirnameL = is::common::cvt_shiftjis_to_utf16(dirname);
+                // MSVCはアクセス権の設定がない.
+                if (_wmkdir(dirnameL.c_str()) == 0)
+                {
+                    ret = true;
+                }
+                return ret;
+            }
+#else
             inline bool
             __mkdir(const std::string& dirname)
             {
@@ -32,6 +46,7 @@ namespace is
                 }
                 return ret;
             }
+#endif
 
 #elif defined(__linux__) || defined(__MACH__)
 

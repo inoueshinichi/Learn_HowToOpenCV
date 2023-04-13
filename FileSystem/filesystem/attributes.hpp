@@ -1,5 +1,5 @@
 /**
- * @file status.hpp
+ * @file attributes.hpp
  * @author Shinichi Inoue (inoue.shinichi.1800@gmail.com)
  * @brief
  * @version 0.1
@@ -48,15 +48,30 @@ namespace is
             inline bool
             __status(const std::string &entryname, EntryStatus &entrystatus, bool slink)
             {
+#if defined(_UNICODE) || defined(UNICODE)
+#define Stat struct __wstat64
+#define stat_func _wstat64
+                std::wstring in_entryname = is::common::cvt_shiftjis_to_utf16(entryname);
+#else
+#define struct __stat64
+#define stat_func _stat64
+                std::string in_entryname = entryname;
+#endif
+
                 std::memset(&entrystatus, 0, sizeof(EntryStatus));
                 bool ret = false;
-                struct __stat64 stat;
+                Stat stat;
 
                 if (slink)
                 {
-                    if (_stat64(entryname.c_str(), &stat) == 0)
+                    if (stat_func(in_entryname.c_str(), &stat) == 0)
                     {
                         /*ここでエントリーの情報を取得*/
+#if defined(_UNICODE) || defined(UNICODE)
+
+#else
+
+#endif
                         ret = true;
                     }
                 }
@@ -69,14 +84,21 @@ namespace is
                      * @note https://learn.microsoft.com/ja-jp/windows/win32/fileio/file-attribute-constants
                      * @warning ANSIバージョンでは、名前は`MAX_PATH`文字に制限されている.
                      */
-                    std::wstring entrynameL = is::common::cvt_shiftjis_to_utf16(entryname);
-                    DWORD file_attributes = GetFileAttributesW(entrynameL.c_str());
+#if defined(_UNICODE) || defined(UNICODE)
+                    std::wstring win_entryname = in_entryname;
+#else
+                    std::wstring win_entryname = is::common::cvt_shiftjis_to_utf16(in_entryname);
+#endif
+                    DWORD file_attributes = GetFileAttributesW(win_entryname.c_str());
 
                     /*ここでエントリーの情報を取得*/
                     ret = true;
                 }
-                
+
                 return ret;
+
+#undef Stat
+#undef stat_func
             }
 
             inline bool

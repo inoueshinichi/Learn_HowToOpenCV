@@ -22,9 +22,31 @@ namespace is
         {
 #if defined(_WIN32) || defined(_WIN64)
 
+            /**
+             * @brief __fopen
+             * @note https://learn.microsoft.com/ja-jp/cpp/c-runtime-library/reference/open-wopen?view=msvc-170
+             *
+             * @param filename
+             * @param mode
+             * @param utf8
+             * @return std::shared_ptr<FILE>
+             */
+
             inline std::shared_ptr<FILE> 
             __fopen(const std::string& filename, const std::string& mode, bool utf8)
             {
+#if defined(_UNICODE) || defined(UNICODE)
+#define open_func _wopen
+#define fdopen_func _wfdopen
+                std::wstring in_filename = is::common::cvt_shiftjis_to_utf16(filename);
+                std::wstring in_mode = is::common::cvt_shiftjis_to_utf16(mode);
+#else
+#define open_func _open
+#define fdopen_func _fdopen
+                std::string in_filename = filename;
+                std::string in_mode = mode;
+#endif
+
                 auto deleter = [](FILE* fp) { if (fp) fclose(fp); };
                 FILE* fp;
                 std::shared_ptr<FILE> sfp(nullptr, deleter);
@@ -61,10 +83,10 @@ namespace is
                 // 新規作成ファイルに対するアクセス権限
                 pmode = _S_IREAD | _S_IWRITE;
 
-                fd = _open(filename.c_str(), option, pmode);
+                fd = open_func(in_filename.c_str(), option, pmode);
                 if (fd != -1)
                 {
-                    fp = _fdopen(fd, mode.c_str());
+                    fp = fdopen_func(fd, in_mode.c_str());
                     if (!fp)
                     {
                         sfp.reset(fp);
@@ -75,6 +97,8 @@ namespace is
                     }
                 }
                 return sfp;
+#undef open_func
+#undef fdopen_func
             }
 
 #elif defined(__linux__) || defined(__MACH__)
