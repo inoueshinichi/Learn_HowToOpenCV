@@ -83,6 +83,7 @@ endif()
 # include test_utils.hpp
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+
 add_subdirectory(Filtering)
 add_subdirectory(Dithering)
 add_subdirectory(EdgeDetector)
@@ -99,7 +100,8 @@ add_subdirectory(ColorSpace)
 add_subdirectory(Mat)
 add_subdirectory(Cv3D)
 add_subdirectory(FileSystem)
-add_subdirectory(BayesianFilter)
+add_subdirectory(BayesFilter)
 add_subdirectory(OpticalFlow)
+add_subdirectory(MotionTracking)
 # add_subdirectory()
 # add_subdirectory()

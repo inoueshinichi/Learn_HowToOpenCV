@@ -1,9 +1,9 @@
 /**
- * @file kalmanfilter.cpp
+ * @file particle_filter.cpp
  * @author Shinichi Inoue (inoue.shinichi.1800@gmail.com)
- * @brief カルマンフィルター
+ * @brief パーティクルフィルター
  * @version 0.1
- * @date 2023-07-10
+ * @date 2023-08-13
  * 
  * @copyright Copyright (c) 2023
  * 
@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     {
         /**
          * @brief KalmanFilter
-         * 
+         *
          */
 
         // HSV Thresholds
@@ -36,8 +36,7 @@ int main(int argc, char **argv)
         KF.statePre.at<float>(3) = 0;
 
         // 状態遷移行列(等速直線運動) A
-        KF.transitionMatrix = (cv::Mat_<float>(4, 4) << 
-                               1, 0, 1, 0,
+        KF.transitionMatrix = (cv::Mat_<float>(4, 4) << 1, 0, 1, 0,
                                0, 1, 0, 1,
                                0, 0, 1, 0,
                                0, 0, 0, 1);
@@ -69,15 +68,15 @@ int main(int argc, char **argv)
         cv::Mat img_bin_rgb;
         cv::Mat img_raw_resized;
         cv::Mat img_bin_resized;
+        cv::Mat img_dst_resized;
 
         // 8近傍
-        cv::Mat element8 = (cv::Mat_<uchar>(3, 3) << 
-                            1, 1, 1,
+        cv::Mat element8 = (cv::Mat_<uchar>(3, 3) << 1, 1, 1,
                             1, 1, 1,
                             1, 1, 1);
 
-        auto kalman_filter = [&](const cv::Mat &curFrame,
-                                 const cv::Mat &lastFrame) -> void
+        auto linear_kalman_filter = [&](const cv::Mat &curFrame,
+                                        const cv::Mat &lastFrame) -> void
         {
             // 入力
             cv::Mat img_src;
@@ -90,9 +89,9 @@ int main(int argc, char **argv)
             cv::split(img_hsv, vec_hsv);
 
             // HSVしきい値処理
-            cv::inRange(img_hsv, 
-                        cv::Scalar(h_lower, s_lower, v_lower), 
-                        cv::Scalar(h_upper, s_upper, v_upper), 
+            cv::inRange(img_hsv,
+                        cv::Scalar(h_lower, s_lower, v_lower),
+                        cv::Scalar(h_upper, s_upper, v_upper),
                         img_bin);
 
             // ノイズ処理
@@ -108,7 +107,6 @@ int main(int argc, char **argv)
                 // continue;
                 // return;
             }
-                
 
             long int max_area = 0, max_index = 0;
             for (int i = 1; i < labelnum; i++)
@@ -120,7 +118,7 @@ int main(int argc, char **argv)
                     max_index = i;
                 }
             }
-            cv::compare(img_lbl, max_index, img_dst, cv::CMP_EQ);
+            cv::compare(img_lbl, max_index, img_dst, cv::CMP_EQ); // ラベル計算
 
             // 面積最大ラベルの重心
             cv::Moments m = cv::moments(img_dst, true);
@@ -143,21 +141,43 @@ int main(int argc, char **argv)
             // 2値画像をMonoからRGBに変換
             cv::cvtColor(img_bin, img_bin_rgb, cv::COLOR_GRAY2BGR);
 
+            // 出力画像
+            img_dst = img_src.clone();
+
             // 重心位置
-            cv::circle(img_src, pos, 5, cv::Scalar(0, 0, 255), -1);
+            cv::circle(img_dst, pos, 5, cv::Scalar(0, 0, 255), -1);
             cv::circle(img_bin_rgb, pos, 5, cv::Scalar(0, 0, 255), -1);
 
             // 予測位置
-            cv::circle(img_src, 
-                       cv::Point(prediction.at<float>(0), prediction.at<float>(1)), 
-                       5, 
-                       cv::Scalar(0, 255, 255), 
-                       -1);
-            cv::circle(img_bin_rgb,
-                        cv::Point(prediction.at<float>(0), prediction.at<float>(1)),
-                        5,
+            cv::circle(img_dst,
+                       /*cv::Point*/ cv::Point(prediction.at<float>(0), prediction.at<float>(1)),
+                       /*int radius*/ 5,
+                       cv::Scalar(0, 255, 255),
+                       /*int thickness*/ -1);
+
+            cv::ellipse(img_dst,
+                        /*cv::Point*/ cv::Point(prediction.at<float>(0), prediction.at<float>(1)),
+                        /*cv::Size axis*/ cv::Size(abs(prediction.at<float>(2)), abs(prediction.at<float>(3))),
+                        /*double angle*/ 0.0,
+                        /*double startAngle*/ 0.0,
+                        /*double endAngle*/ 360.0,
                         cv::Scalar(0, 255, 255),
-                        -1);
+                        /*int thickness*/ 3);
+
+            cv::circle(img_bin_rgb,
+                       /*cv::Point*/ cv::Point(prediction.at<float>(0), prediction.at<float>(1)),
+                       /*int radius*/ 5,
+                       cv::Scalar(0, 255, 255),
+                       /*int thickness*/ -1);
+
+            cv::ellipse(img_bin_rgb,
+                        /*cv::Point*/ cv::Point(prediction.at<float>(0), prediction.at<float>(1)),
+                        /*cv::Size axis*/ cv::Size(abs(prediction.at<float>(2)), abs(prediction.at<float>(3))),
+                        /*double angle*/ 0.0,
+                        /*double startAngle*/ 0.0,
+                        /*double endAngle*/ 360.0,
+                        cv::Scalar(0, 255, 255),
+                        /*int thickness*/ 3);
 
             // 表示用画像
             int width = curFrame.cols;
@@ -166,18 +186,20 @@ int main(int argc, char **argv)
             int half_height = (int)(height / 2);
             cv::resize(img_src, img_raw_resized, cv::Size(half_width, half_height));
             cv::resize(img_bin_rgb, img_bin_resized, cv::Size(half_width, half_height));
+            cv::resize(img_dst, img_dst_resized, cv::Size(half_width, half_height));
             cv::Mat img_show = cv::Mat::zeros(cv::Size(width, height), curFrame.type());
 
             // 部分領域に書き込む
-            img_raw_resized.copyTo(img_show(cv::Rect(0, 0, half_width, half_height)));                    // current(左上)
-            img_bin_resized.copyTo(img_show(cv::Rect(half_width, half_height, half_width, half_height))); // last(右下)
+            img_raw_resized.copyTo(img_show(cv::Rect(0, 0, half_width, half_height)));                    // raw(左上)
+            img_bin_resized.copyTo(img_show(cv::Rect(half_width, 0, half_width, half_height)));           // bin_rgb(右上)
+            img_dst_resized.copyTo(img_show(cv::Rect(half_width, half_height, half_width, half_height))); // dst(右下)
 
             CV_IMSHOW(img_show)
             // CV_IMSHOW(curFrame)
             // CV_IMSHOW(lastFrame)
         };
 
-        ProcessFrame(0, kalman_filter);
+        ProcessFrame(0, linear_kalman_filter);
     }
     catch (const char *str)
     {
