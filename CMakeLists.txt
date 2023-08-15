@@ -66,9 +66,11 @@ message(STATUS ">>>>> C++ compiler `Relwithdebinfo` flags: ${CMAKE_CXX_FLAGS_REL
 message(STATUS "========== [END] C++ All Target Options ==========")
 
 ###############################################################################
-# OpenCV
+# third-party
 ###############################################################################
 add_subdirectory(third-party)
+include_directories(third-party/rapidjson) # rapidjson
+include_directories(third-party/eigen-3.4.0) # eigen
 
 ###############################################################################
 # Test Sample Dirs
