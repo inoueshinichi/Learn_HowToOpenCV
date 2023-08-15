@@ -37,6 +37,7 @@
 #include <exception>
 #include <stdexcept>
 #include <sstream>
+#include <chrono>
 
 
 #define CURRENT_SOURCE_DIR "@CMAKE_CURRENT_SOURCE_DIR@"
@@ -68,40 +69,50 @@ std::string GetTestData(const char* filename)
 
 #define CV_TYPE_LOG(mat) std::printf("Type of %s : %s\n", #mat, cv::typeToString(mat.type()).c_str());
 
-#define CV_DEFINE_PROCESSFRAME                                           \
-    void ProcessFrame(unsigned int deviceID,                             \
-        std::function<void(const cv::Mat &, const cv::Mat &)> process)   \
-    {                                                                    \
-        cv::VideoCapture capture(0);                                     \
-        if (!capture.open(0))                                            \
-        {                                                                \
-            throw("camera not found!");                                  \
-        }                                                                \
-                                                                         \
-        cv::Mat currentFrame, lastFrame;                                 \
-        bool isGetedFirstFrame = false;                                  \
-                                                                         \
-        while (true)                                                     \
-        {                                                                \
-            capture >> currentFrame; /*フレーム画像を取得*/                 \
-                                                                         \
-            if (!isGetedFirstFrame)                                      \
-            {                                                            \
-                currentFrame.copyTo(lastFrame);                          \
-                isGetedFirstFrame = true;                                \
-            }                                                            \
-                                                                         \
-            process(currentFrame, lastFrame); /*各フレームで行う処理*/      \
-            currentFrame.copyTo(lastFrame); /*前フレーム*/                 \
-                                                                         \
-            if (cv::waitKey(1) >= 0)                                     \
-                break;                                                   \
-        }                                                                \
+#define CV_DEFINE_PROCESSFRAME                                                               \
+    void ProcessFrame(unsigned int deviceID,                                                 \
+        std::function<void(const cv::Mat &, const cv::Mat &)> process,                       \
+        bool display_time = false)                                                           \
+    {                                                                                        \
+        cv::VideoCapture capture(0);                                                         \
+        if (!capture.open(0))                                                                \
+        {                                                                                    \
+            throw("camera not found!");                                                      \
+        }                                                                                    \
+                                                                                             \
+        cv::Mat currentFrame, lastFrame;                                                     \
+        bool isGetedFirstFrame = false;                                                      \
+                                                                                             \
+        while (true)                                                                         \
+        {                                                                                    \
+            auto start = std::chrono::high_resolution_clock::now();                          \
+            capture >> currentFrame; /*フレーム画像を取得*/                                     \
+                                                                                             \
+            if (!isGetedFirstFrame)                                                          \
+            {                                                                                \
+                currentFrame.copyTo(lastFrame);                                              \
+                isGetedFirstFrame = true;                                                    \
+            }                                                                                \
+                                                                                             \
+            process(currentFrame, lastFrame); /*各フレームで行う処理*/                          \
+            currentFrame.copyTo(lastFrame); /*前フレーム*/                                     \
+                                                                                             \
+            if (cv::waitKey(1) >= 0)                                                         \
+                break;                                                                       \
+            auto end = std::chrono::high_resolution_clock::now();                            \
+            auto duration = end - start;                                                     \
+            double duration_ns =                                                             \
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();  \
+            if (display_time) {                                                              \
+                std::cout << __func__ << ": " << duration_ns << "[ns]" << std::endl;         \
+            }                                                                                \
+        }                                                                                    \
     }
 
 #define CV_DEFINE_PROCESSFRAME_EX                                                            \
     void ProcessFrameEx(unsigned int deviceID,                                               \
-            std::function<void(const cv::Mat &, const cv::Mat &, const cv::Mat &)> process)  \
+            std::function<void(const cv::Mat &, const cv::Mat &, const cv::Mat &)> process,  \
+            bool display_time = false)                                                       \
     {                                                                                        \
         cv::VideoCapture capture(0);                                                         \
         if (!capture.open(0))                                                                \
@@ -114,6 +125,7 @@ std::string GetTestData(const char* filename)
                                                                                              \
         while (true)                                                                         \
         {                                                                                    \
+            auto start = std::chrono::high_resolution_clock::now();                          \
             capture >> currentFrame; /*フレーム画像を取得*/                                     \
                                                                                              \
             if (!isGetedFirstFrame)                                                          \
@@ -129,5 +141,13 @@ std::string GetTestData(const char* filename)
                                                                                              \
             if (cv::waitKey(1) >= 0)                                                         \
                 break;                                                                       \
+                                                                                             \
+            auto end = std::chrono::high_resolution_clock::now();                            \
+            auto duration = end - start;                                                     \
+            double duration_ns =                                                             \
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();  \
+            if (display_time) {                                                              \
+                std::cout << __func__ << ": " << duration_ns << "[ns]" << std::endl;         \
+            }                                                                                \
         }                                                                                    \
     }
