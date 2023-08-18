@@ -20,7 +20,7 @@ project(${PROJECT_NAME} LANGUAGES CXX VERSION 0.1.0)
 set(BUILD_TARGET OCV_FILESYSTEM)
 add_executable(${BUILD_TARGET} ./main_filesystem.cpp)
 target_include_directories(${BUILD_TARGET} PRIVATE
-    ./fileSystem
+    ./filesystem
 )
 
 file(GLOB BUILD_HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
