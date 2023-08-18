@@ -52,7 +52,7 @@ target_sources(${BUILD_TARGET} PRIVATE
 #######################
 # Find Fundation Matrix
 #######################
-make_test_case_opencv(OCV_FIND_F_MAT_FROM_STREAM ./cv3d_find_f_mat_from_stream.cpp)
+# make_test_case_opencv(OCV_FIND_F_MAT_FROM_STREAM ./cv3d_find_f_mat_from_stream.cpp)
 
 #######################
 # Find Essential Matrix
