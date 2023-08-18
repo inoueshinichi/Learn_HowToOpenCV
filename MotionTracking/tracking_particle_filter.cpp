@@ -10,7 +10,7 @@
  */
 #include <test_utils.hpp>
 #include <opencv2/opencv.hpp>
-#include <particle_filter.hpp>
+#include <BayesFilter/particle_filter.hpp>
 #include <random> // std::uniform_real_distribution<float>, std::normal_distribution
 
 // スルー画像の取り込み処理

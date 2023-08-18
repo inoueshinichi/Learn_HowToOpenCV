@@ -68,12 +68,12 @@ int main(int argc, char **argv)
 
             // 特徴点のペア
             std::vector<std::vector<cv::DMatch>> matches;
-            /*
-               img1_match[0] : img2_match[0], img2_match[1], ..., img2_match[top_k]
-               img1_match[1] : img2_match[0], img2_match[2], ..., img2_match[top_k]
-                     :
-                     :
-               img1_match[n] : img2_match[0], img2_match[2], ..., img2_match[top_k]
+            /* n x m = Nの特徴点ペアの内, k個抜き取る?
+            img1_kp[0] : match[0,0], match[0,1], ..., match[0,top_k]
+            img1_kp[1] : match[1,0], match[1,2], ..., match[1,top_k]
+                    :
+                    :
+            img1_kp[n] : match[k,0], match[k,2], ..., match[k,top_k]
             */
 
             // 上位k位までのマッチング(query, trained)

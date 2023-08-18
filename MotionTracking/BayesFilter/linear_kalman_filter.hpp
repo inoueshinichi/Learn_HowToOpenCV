@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2023
  * 
  */
-#pramga once
+#pragma once
 
 namespace is
 {
